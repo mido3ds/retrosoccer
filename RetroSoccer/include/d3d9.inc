@@ -1,0 +1,13 @@
+; ..\X86\d3d9.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+D3DPERF_BeginEvent PROTO :DWORD,:DWORD
+D3DPERF_EndEvent PROTO
+D3DPERF_GetStatus PROTO
+D3DPERF_QueryRepeatFrame PROTO
+D3DPERF_SetMarker PROTO :DWORD,:DWORD
+D3DPERF_SetOptions PROTO :DWORD
+D3DPERF_SetRegion PROTO :DWORD,:DWORD
+Direct3DCreate9 PROTO :DWORD
+Direct3DCreate9Ex PROTO :DWORD,:DWORD
+

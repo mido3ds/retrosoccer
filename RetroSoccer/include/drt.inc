@@ -1,0 +1,20 @@
+; ..\X86\drt.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DrtClose PROTO :DWORD
+DrtContinueSearch PROTO :DWORD
+DrtEndSearch PROTO :DWORD
+DrtGetEventData PROTO :DWORD,:DWORD,:DWORD
+DrtGetEventDataSize PROTO :DWORD,:DWORD
+DrtGetInstanceName PROTO :DWORD,:DWORD,:DWORD
+DrtGetInstanceNameSize PROTO :DWORD,:DWORD
+DrtGetSearchPath PROTO :DWORD,:DWORD,:DWORD
+DrtGetSearchPathSize PROTO :DWORD,:DWORD
+DrtGetSearchResult PROTO :DWORD,:DWORD,:DWORD
+DrtGetSearchResultSize PROTO :DWORD,:DWORD
+DrtOpen PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DrtRegisterKey PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DrtStartSearch PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DrtUnregisterKey PROTO :DWORD
+DrtUpdateKey PROTO :DWORD,:DWORD
+

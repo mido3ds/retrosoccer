@@ -1,0 +1,27 @@
+; ..\X86\prntvpt.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BindPTProviderThunk PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ConvertDevModeToPrintTicketThunk PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ConvertDevModeToPrintTicketThunk2 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ConvertPrintTicketToDevModeThunk PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ConvertPrintTicketToDevModeThunk2 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DllMain PROTO :DWORD,:DWORD,:DWORD
+GetDeviceDefaultPrintTicketThunk PROTO :DWORD,:DWORD,:DWORD
+GetDeviceNamespacesThunk PROTO :DWORD,:DWORD,:DWORD
+GetPrintCapabilitiesThunk PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetPrintCapabilitiesThunk2 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetSchemaVersionThunk PROTO :DWORD
+MergeAndValidatePrintTicketThunk PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MergeAndValidatePrintTicketThunk2 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PTCloseProvider PROTO :DWORD
+PTConvertDevModeToPrintTicket PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PTConvertPrintTicketToDevMode PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PTGetPrintCapabilities PROTO :DWORD,:DWORD,:DWORD,:DWORD
+PTMergeAndValidatePrintTicket PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PTOpenProvider PROTO :DWORD,:DWORD,:DWORD
+PTOpenProviderEx PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PTQuerySchemaVersionSupport PROTO :DWORD,:DWORD
+PTReleaseMemory PROTO :DWORD
+UnbindPTProviderThunk PROTO :DWORD
+

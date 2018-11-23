@@ -1,0 +1,13 @@
+; ..\X86\format.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DecoderGetOnDiskSize PROTO :DWORD,:DWORD
+DecoderInit PROTO :DWORD,:DWORD
+IlmethodEmit PROTO :DWORD,:DWORD,:DWORD,:DWORD
+IlmethodSize PROTO :DWORD,:DWORD
+SectEH_EHClause PROTO :DWORD,:DWORD,:DWORD
+SectEH_Emit PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SectEH_SizeExact PROTO :DWORD,:DWORD
+SectEH_SizeWithCode PROTO :DWORD,:DWORD
+SectEH_SizeWorst PROTO :DWORD
+

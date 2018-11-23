@@ -1,0 +1,44 @@
+; ..\X86\bthprops.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BluetoothAuthenticateDevice PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+BluetoothAuthenticateDeviceEx PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+BluetoothAuthenticateMultipleDevices PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothAuthenticationAgent PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothDisconnectDevice PROTO :DWORD,:DWORD
+BluetoothDisplayDeviceProperties PROTO :DWORD,:DWORD
+BluetoothEnableDiscovery PROTO :DWORD,:DWORD
+BluetoothEnableIncomingConnections PROTO :DWORD,:DWORD
+BluetoothEnumerateInstalledServices PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothFindDeviceClose PROTO :DWORD
+BluetoothFindFirstDevice PROTO :DWORD,:DWORD
+BluetoothFindFirstRadio PROTO :DWORD,:DWORD
+BluetoothFindFirstService PROTO :DWORD,:DWORD
+BluetoothFindNextDevice PROTO :DWORD,:DWORD
+BluetoothFindNextRadio PROTO :DWORD,:DWORD
+BluetoothFindNextService PROTO :DWORD,:DWORD
+BluetoothFindRadioClose PROTO :DWORD
+BluetoothFindServiceClose PROTO :DWORD
+BluetoothGetDeviceInfo PROTO :DWORD,:DWORD
+BluetoothGetRadioInfo PROTO :DWORD,:DWORD
+BluetoothIsConnectable PROTO :DWORD
+BluetoothIsDiscoverable PROTO :DWORD
+BluetoothIsVersionAvailable PROTO :DWORD,:DWORD
+BluetoothRegisterForAuthentication PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothRegisterForAuthenticationEx PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothRemoveDevice PROTO :DWORD
+BluetoothSdpEnumAttributes PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothSdpGetAttributeValue PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothSdpGetContainerElementData PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothSdpGetElementData PROTO :DWORD,:DWORD,:DWORD
+BluetoothSdpGetString PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+BluetoothSelectDevices PROTO :DWORD
+BluetoothSelectDevicesFree PROTO :DWORD
+BluetoothSendAuthenticationResponse PROTO :DWORD,:DWORD,:DWORD
+BluetoothSendAuthenticationResponseEx PROTO :DWORD,:DWORD
+BluetoothSetLocalServiceInfo PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothSetServiceState PROTO :DWORD,:DWORD,:DWORD,:DWORD
+BluetoothUnregisterAuthentication PROTO :DWORD
+BluetoothUpdateDeviceRecord PROTO :DWORD
+CPlApplet PROTO :DWORD,:DWORD,:DWORD,:DWORD
+

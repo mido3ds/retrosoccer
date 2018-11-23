@@ -1,0 +1,144 @@
+; ..\X86\ntdsa.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AppendRDN PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+AttrTypeToKey PROTO :DWORD,:DWORD
+ConvertReplicaLinkToNative PROTO :DWORD,:DWORD
+CountNameParts PROTO :DWORD,:DWORD
+CrackSingleName PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DBDsReplBackupUpdate PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DBUpdateBackupTimeStamps PROTO
+DNSHostNameValueCheckForNetlogon PROTO :DWORD,:DWORD
+DSInstanceCompare PROTO :DWORD,:DWORD
+DSInstanceFromNTDSAddrEx PROTO :DWORD,:DWORD
+DSInstanceFromNameEx PROTO :DWORD,:DWORD
+DSInstanceFromSetupEx PROTO :DWORD,:DWORD,:DWORD
+DSNAMEToHashKeyExternal PROTO :DWORD
+DSNAMEToMappedStrExternal PROTO :DWORD
+DSStrToHashKeyExternal PROTO :DWORD,:DWORD
+DSStrToMappedStrExternal PROTO :DWORD,:DWORD
+DbgPrintErrorInfo PROTO
+DebPrintV PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DebugTest PROTO :DWORD,:DWORD
+DirAddEntry PROTO :DWORD,:DWORD
+DirBind PROTO :DWORD,:DWORD
+DirCompare PROTO :DWORD,:DWORD
+DirErrorToNtStatus PROTO :DWORD,:DWORD
+DirErrorToWinError PROTO :DWORD,:DWORD
+DirFindEntry PROTO :DWORD,:DWORD
+DirGetDomainHandle PROTO :DWORD
+DirModifyDN PROTO :DWORD,:DWORD
+DirModifyEntry PROTO :DWORD,:DWORD
+DirNotifyRegister PROTO :DWORD,:DWORD,:DWORD
+DirNotifyUnRegister PROTO :DWORD,:DWORD
+DirOperationControl PROTO :DWORD,:DWORD
+DirPrepareForImpersonate PROTO :DWORD,:DWORD,:DWORD
+DirProtectEntry PROTO :DWORD
+DirRead PROTO :DWORD,:DWORD
+DirRemoveEntry PROTO :DWORD,:DWORD
+DirReplicaAdd PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaDelete PROTO :DWORD,:DWORD,:DWORD
+DirReplicaDemote PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaGetDemoteTarget PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaModify PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaReferenceUpdate PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaReplSingleObj PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaSetCredentials PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DirReplicaSynchronize PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DirSearch PROTO :DWORD,:DWORD
+DirStopImpersonating PROTO :DWORD,:DWORD,:DWORD
+DirTransactControl PROTO :DWORD
+DoAssert PROTO :DWORD,:DWORD,:DWORD
+DoLogEventAndTrace PROTO :DWORD
+DoLogOverride PROTO :DWORD,:DWORD
+DsCanRODCHostNdncForNetLogon PROTO :DWORD,:DWORD,:DWORD
+DsChangeBootOptions PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DsCheckConstraint PROTO :DWORD,:DWORD,:DWORD
+DsFreeDomainControllerInfoForNetLogon PROTO :DWORD,:DWORD,:DWORD
+DsFreeServersAndSitesForNetLogon PROTO :DWORD
+DsGetBootOptions PROTO
+DsGetDefaultObjCategory PROTO :DWORD
+DsGetDomainControllerInfoForNetLogon PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DsGetEventConfig PROTO
+DsGetServersAndSitesForNetLogon PROTO :DWORD,:DWORD
+DsInitialize PROTO :DWORD,:DWORD,:DWORD
+DsInitializeForSAM PROTO
+DsIsBeingBackSynced PROTO
+DsIsDCReadOnly PROTO
+DsIsDLLLoaded PROTO
+DsLoadDLL PROTO :DWORD
+DsPrepareUninitialize PROTO
+DsQueryDnsHostNameForNetLogon PROTO :DWORD,:DWORD
+DsRegisterServiceStateCallback PROTO :DWORD
+DsTraceEvent PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DsUninitialize PROTO :DWORD
+DsUninitializeForServiceStartError PROTO
+DsUnloadDLL PROTO
+DsUnregisterServiceStateCallback PROTO :DWORD
+DsWaitUntilDelayedStartupIsDone PROTO
+DsaDisableUpdates PROTO
+DsaEnableUpdates PROTO
+DsaSetInstallCallback PROTO :DWORD,:DWORD,:DWORD,:DWORD
+FindNetbiosDomainName PROTO :DWORD,:DWORD,:DWORD
+GCVerifyCacheLookup PROTO :DWORD,:DWORD
+GetConfigDsName PROTO :DWORD
+GetConfigParam PROTO :DWORD,:DWORD,:DWORD
+GetConfigurationInfo PROTO :DWORD,:DWORD,:DWORD
+GetConfigurationName PROTO :DWORD,:DWORD,:DWORD
+GetConfigurationNamesList PROTO :DWORD,:DWORD,:DWORD,:DWORD
+GetDnsRootAlias PROTO :DWORD,:DWORD
+GetRDNInfoExternal PROTO :DWORD,:DWORD,:DWORD,:DWORD
+GuidBasedDNSNameFromDSName PROTO :DWORD
+ImpersonateAnyClient PROTO
+InitCommarg PROTO :DWORD
+InitializeSamDsExtension PROTO :DWORD
+IsFullDCInSiteForNetlogon PROTO :DWORD,:DWORD
+IsMangledRDNExternal PROTO :DWORD,:DWORD,:DWORD
+IsRODCInSiteForNetlogon PROTO :DWORD,:DWORD
+IsStringGuid PROTO :DWORD,:DWORD
+IsValidDSInstance PROTO :DWORD
+MapSpnServiceClass PROTO :DWORD
+MatchCrossRefByNetbiosName PROTO :DWORD,:DWORD,:DWORD
+MatchCrossRefBySid PROTO :DWORD,:DWORD,:DWORD
+MatchDomainDnByDnsName PROTO :DWORD,:DWORD,:DWORD
+MatchDomainDnByNetbiosName PROTO :DWORD,:DWORD,:DWORD
+MtxAddrFromTransportAddr PROTO :DWORD
+MtxSame PROTO :DWORD,:DWORD
+NTDSServiceMain PROTO :DWORD,:DWORD
+NameMatched PROTO :DWORD,:DWORD
+NameMatchedStringNameOnly PROTO :DWORD,:DWORD
+NamePrefix PROTO :DWORD,:DWORD
+NtdsaiDeRegisterKdcAcctChangeNotif PROTO
+NtdsaiRegisterKdcAcctChangeNotif PROTO :DWORD
+NtdsaiUpdateKrbtgtAccounts PROTO :DWORD,:DWORD,:DWORD
+QuoteRDNValue PROTO :DWORD,:DWORD,:DWORD,:DWORD
+ReplicaLinkSizeFromParts PROTO :DWORD,:DWORD
+ReplicaLinkUpdateDSInstance PROTO :DWORD,:DWORD
+SamIAmIGC PROTO
+SamIDsResetBadPwdCountOnPdc PROTO :DWORD
+SamIGCLookupNames PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SamIGCLookupSids PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SamISameSite PROTO :DWORD
+SampDsControl PROTO :DWORD,:DWORD
+SampExistsDsTransaction PROTO
+SampGetClassAttribute PROTO :DWORD,:DWORD,:DWORD,:DWORD
+SampSetDsa PROTO :DWORD
+StartDsaServiceMain PROTO :DWORD,:DWORD,:DWORD
+THAlloc PROTO :DWORD
+THClearErrors PROTO
+THCreate PROTO :DWORD
+THDestroy PROTO
+THFree PROTO :DWORD
+THGetErrorString PROTO
+THQuery PROTO
+THReAlloc PROTO :DWORD,:DWORD
+THRestore PROTO :DWORD
+THSave PROTO
+THVerifyCount PROTO :DWORD
+TransportAddrFromMtxAddr PROTO :DWORD
+TrimDSNameBy PROTO :DWORD,:DWORD,:DWORD
+UnImpersonateAnyClient PROTO
+UpdateDSPerfStats PROTO :DWORD,:DWORD,:DWORD
+phoneticDisplayNameABView PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+showInAddressBookArrayV1 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+

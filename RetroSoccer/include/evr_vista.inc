@@ -1,0 +1,32 @@
+; ..\X86\evr_vista.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MFConvertColorInfoFromDXVA PROTO :DWORD,:DWORD
+MFConvertColorInfoFromDXV equ <MFConvertColorInfoFromDXVA>
+
+MFConvertColorInfoToDXVA PROTO :DWORD,:DWORD
+MFConvertColorInfoToDXV equ <MFConvertColorInfoToDXVA>
+
+MFConvertFromFP16Array PROTO :DWORD,:DWORD,:DWORD
+MFConvertToFP16Array PROTO :DWORD,:DWORD,:DWORD
+MFCopyImage PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MFCreateDXSurfaceBuffer PROTO :DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoMediaType PROTO :DWORD,:DWORD
+MFCreateVideoMediaTypeFromBitMapInfoHeader PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoMediaTypeFromSubtype PROTO :DWORD,:DWORD
+MFCreateVideoMediaTypeFromVideoInfoHeader PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoMediaTypeFromVideoInfoHeader2 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoMixer PROTO :DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoMixerAndPresenter PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoOTA PROTO :DWORD,:DWORD
+MFCreateVideoOT equ <MFCreateVideoOTA>
+
+MFCreateVideoPresenter PROTO :DWORD,:DWORD,:DWORD,:DWORD
+MFCreateVideoSampleAllocator PROTO :DWORD,:DWORD
+MFCreateVideoSampleFromSurface PROTO :DWORD,:DWORD
+MFGetPlaneSize PROTO :DWORD,:DWORD,:DWORD,:DWORD
+MFGetStrideForBitmapInfoHeader PROTO :DWORD,:DWORD,:DWORD
+MFInitVideoFormat PROTO :DWORD,:DWORD
+MFInitVideoFormat_RGB PROTO :DWORD,:DWORD,:DWORD,:DWORD
+MFIsFormatYUV PROTO :DWORD
+

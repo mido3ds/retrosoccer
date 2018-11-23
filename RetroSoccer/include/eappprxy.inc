@@ -1,0 +1,20 @@
+; ..\X86\eappprxy.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+EapHostPeerBeginSession PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerClearConnection PROTO :DWORD,:DWORD
+EapHostPeerEndSession PROTO :DWORD,:DWORD
+EapHostPeerFreeEapError PROTO :DWORD
+EapHostPeerFreeRuntimeMemory PROTO :DWORD
+EapHostPeerGetAuthStatus PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerGetIdentity PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerGetResponseAttributes PROTO :DWORD,:DWORD,:DWORD
+EapHostPeerGetResult PROTO :DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerGetSendPacket PROTO :DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerGetUIContext PROTO :DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerInitialize PROTO
+EapHostPeerProcessReceivedPacket PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerSetResponseAttributes PROTO :DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerSetUIContext PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+EapHostPeerUninitialize PROTO
+

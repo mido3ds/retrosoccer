@@ -1,0 +1,131 @@
+; ..\X86\spoolss.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AbortPrinter PROTO :DWORD
+AdjustPointers PROTO :DWORD,:DWORD,:DWORD,:DWORD
+AdjustPointersInStructuresArray PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+AlignKMPtr PROTO :DWORD,:DWORD
+AlignRpcPtr PROTO :DWORD,:DWORD
+AllocSplStr PROTO :DWORD
+AllowRemoteCalls PROTO
+AppendPrinterNotifyInfoData PROTO :DWORD,:DWORD,:DWORD
+BuildOtherNamesFromMachineName PROTO :DWORD,:DWORD
+CacheAddName PROTO :DWORD
+CacheCreateAndAddNode PROTO :DWORD,:DWORD
+CacheCreateAndAddNodeWithIPAddresses PROTO :DWORD,:DWORD,:DWORD,:DWORD
+CacheDeleteNode PROTO :DWORD
+CacheIsNameCluster PROTO :DWORD
+CacheIsNameInNodeList PROTO :DWORD,:DWORD
+CallDrvDevModeConversion PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+CallRouterFindFirstPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+CheckLocalCall PROTO
+ClosePrinter PROTO :DWORD
+CreatePrinterIC PROTO :DWORD,:DWORD
+DeletePrinter PROTO :DWORD
+DeletePrinterIC PROTO :DWORD
+DllAllocSplMem PROTO :DWORD
+DllAllocSplStr PROTO :DWORD
+DllFreeSplMem PROTO :DWORD
+DllFreeSplStr PROTO :DWORD
+DllMain PROTO :DWORD,:DWORD,:DWORD
+DllReallocSplMem PROTO :DWORD,:DWORD,:DWORD
+DllReallocSplStr PROTO :DWORD,:DWORD
+EndDocPrinter PROTO :DWORD
+EndPagePrinter PROTO :DWORD
+FindClosePrinterChangeNotification PROTO :DWORD
+FlushPrinter PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FormatPrinterForRegistryKey PROTO :DWORD,:DWORD,:DWORD
+FormatRegistryKeyForPrinter PROTO :DWORD,:DWORD,:DWORD
+FreeOtherNames PROTO :DWORD,:DWORD
+GetJobAttributes PROTO :DWORD,:DWORD,:DWORD
+GetJobAttributesEx PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetNetworkId PROTO :DWORD,:DWORD
+GetServerPolicy PROTO :DWORD,:DWORD
+GetShrinkedSize PROTO :DWORD,:DWORD
+GetSpoolerTlsIndexes PROTO :DWORD,:DWORD,:DWORD
+ImpersonatePrinterClient PROTO :DWORD
+InitializeRouter PROTO :DWORD
+IsNameTheLocalMachineOrAClusterSpooler PROTO :DWORD
+IsNamedPipeRpcCall PROTO
+MIDL_user_allocate1 PROTO :DWORD
+MIDL_user_free1 PROTO :DWORD
+MakeOffset PROTO :DWORD,:DWORD
+MakePTR PROTO :DWORD,:DWORD
+MarshallDownStructure PROTO :DWORD,:DWORD,:DWORD,:DWORD
+MarshallDownStructuresArray PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MarshallUpStructure PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+MarshallUpStructuresArray PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PackStringToEOB PROTO :DWORD,:DWORD
+PackStrings PROTO :DWORD,:DWORD,:DWORD,:DWORD
+PartialReplyPrinterChangeNotification PROTO :DWORD,:DWORD
+PlayGdiScriptOnPrinterIC PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+PrinterHandleRundown PROTO :DWORD
+ProvidorFindClosePrinterChangeNotification PROTO :DWORD
+ProvidorFindFirstPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ReadPrinter PROTO :DWORD,:DWORD,:DWORD,:DWORD
+ReallocSplMem PROTO :DWORD,:DWORD,:DWORD
+ReallocSplStr PROTO :DWORD,:DWORD
+RemoteFindFirstPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ReplyClosePrinter PROTO :DWORD
+ReplyOpenPrinter PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ReplyPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD
+ReplyPrinterChangeNotificationEx PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ReportJobProcessingProgress PROTO :DWORD,:DWORD,:DWORD,:DWORD
+RevertToPrinterSelf PROTO
+RouterAddPrinterConnection2 PROTO :DWORD,:DWORD,:DWORD
+RouterAllocBidiMem PROTO :DWORD
+RouterAllocBidiResponseContainer PROTO :DWORD
+RouterAllocPrinterNotifyInfo PROTO :DWORD
+RouterBroadcastMessage PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+RouterFindCompatibleDriver PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+RouterFindFirstPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+RouterFindNextPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+RouterFreeBidiMem PROTO :DWORD
+RouterFreeBidiResponseContainer PROTO :DWORD
+RouterFreePrinterNotifyInfo PROTO :DWORD
+RouterInternalGetPrinterDriver PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+RouterRefreshPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD
+RouterReplyPrinter PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+RouterSpoolerSetPolicy PROTO :DWORD,:DWORD,:DWORD
+ScheduleJob PROTO :DWORD,:DWORD
+SeekPrinter PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SendRecvBidiData PROTO :DWORD,:DWORD,:DWORD,:DWORD
+SplCloseSpoolFileHandle PROTO :DWORD
+SplCommitSpoolData PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SplDriverUnloadComplete PROTO :DWORD
+SplGetClientUserHandle PROTO :DWORD
+SplGetSpoolFileInfo PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SplGetUserSidStringFromToken PROTO :DWORD,:DWORD,:DWORD,:DWORD
+SplInitializeWinSpoolDrv PROTO :DWORD
+SplIsSessionZero PROTO :DWORD,:DWORD,:DWORD
+SplIsUpgrade PROTO
+SplProcessPnPEvent PROTO :DWORD,:DWORD,:DWORD
+SplProcessSessionEvent PROTO :DWORD,:DWORD,:DWORD
+SplPromptUIInUsersSession PROTO :DWORD,:DWORD,:DWORD,:DWORD
+SplQueryUserInfo PROTO :DWORD,:DWORD
+SplReadPrinter PROTO :DWORD,:DWORD,:DWORD
+SplRegisterForDeviceEvents PROTO :DWORD,:DWORD,:DWORD
+SplRegisterForSessionEvents PROTO :DWORD,:DWORD
+SplShutDownRouter PROTO
+SplUalCollectData PROTO :DWORD,:DWORD
+SplUnregisterForDeviceEvents PROTO :DWORD
+SplUnregisterForSessionEvents PROTO :DWORD
+SpoolerFindClosePrinterChangeNotification PROTO :DWORD
+SpoolerFindFirstPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SpoolerFindNextPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD
+SpoolerFreePrinterNotifyInfo PROTO :DWORD
+SpoolerHasInitialized PROTO
+SpoolerInit PROTO
+SpoolerRefreshPrinterChangeNotification PROTO :DWORD,:DWORD,:DWORD,:DWORD
+StartPagePrinter PROTO :DWORD
+UndoAlignKMPtr PROTO :DWORD,:DWORD
+UndoAlignRpcPtr PROTO :DWORD,:DWORD,:DWORD,:DWORD
+UpdateBufferSize PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+UpdatePrinterRegAll PROTO :DWORD,:DWORD,:DWORD,:DWORD
+UpdatePrinterRegUser PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WaitForPrinterChange PROTO :DWORD,:DWORD
+WaitForSpoolerInitialization PROTO
+WritePrinter PROTO :DWORD,:DWORD,:DWORD,:DWORD
+bGetDevModePerUser PROTO :DWORD,:DWORD,:DWORD
+bSetDevModePerUser PROTO :DWORD,:DWORD,:DWORD
+

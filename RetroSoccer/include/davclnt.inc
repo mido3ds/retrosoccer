@@ -1,0 +1,25 @@
+; ..\X86\davclnt.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DavCancelConnectionsToServer PROTO :DWORD,:DWORD
+DavFreeUsedDiskSpace PROTO :DWORD
+DavGetDiskSpaceUsage PROTO :DWORD,:DWORD,:DWORD,:DWORD
+DavGetTheLockOwnerOfTheFile PROTO :DWORD,:DWORD,:DWORD
+DavInvalidateCache PROTO :DWORD
+DavRegisterAuthCallback PROTO :DWORD,:DWORD
+DavUnregisterAuthCallback PROTO :DWORD
+DllMain PROTO :DWORD,:DWORD,:DWORD
+NPAddConnection PROTO :DWORD,:DWORD,:DWORD
+NPAddConnection3 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+NPCancelConnection PROTO :DWORD,:DWORD
+NPCloseEnum PROTO :DWORD
+NPEnumResource PROTO :DWORD,:DWORD,:DWORD,:DWORD
+NPFormatNetworkName PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+NPGetCaps PROTO :DWORD
+NPGetConnection PROTO :DWORD,:DWORD,:DWORD
+NPGetResourceInformation PROTO :DWORD,:DWORD,:DWORD,:DWORD
+NPGetResourceParent PROTO :DWORD,:DWORD,:DWORD
+NPGetUniversalName PROTO :DWORD,:DWORD,:DWORD,:DWORD
+NPGetUser PROTO :DWORD,:DWORD,:DWORD
+NPOpenEnum PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+

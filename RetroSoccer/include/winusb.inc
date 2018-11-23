@@ -1,0 +1,38 @@
+; ..\X86\winusb.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WinUsb_AbortPipe PROTO :DWORD,:DWORD
+WinUsb_AbortPipeAsync PROTO :DWORD,:DWORD,:DWORD
+WinUsb_ControlTransfer PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_FlushPipe PROTO :DWORD,:DWORD
+WinUsb_Free PROTO :DWORD
+WinUsb_GetAdjustedFrameNumber PROTO :DWORD,:DWORD,:DWORD
+WinUsb_GetAssociatedInterface PROTO :DWORD,:DWORD,:DWORD
+WinUsb_GetCurrentAlternateSetting PROTO :DWORD,:DWORD
+WinUsb_GetCurrentFrameNumber PROTO :DWORD,:DWORD,:DWORD
+WinUsb_GetDescriptor PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_GetOverlappedResult PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_GetPipePolicy PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_GetPowerPolicy PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_Initialize PROTO :DWORD,:DWORD
+WinUsb_ParseConfigurationDescriptor PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_ParseDescriptors PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_QueryDeviceInformation PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_QueryInterfaceSettings PROTO :DWORD,:DWORD,:DWORD
+WinUsb_QueryPipe PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_QueryPipeEx PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_ReadIsochPipe PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_ReadIsochPipeAsap PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_ReadPipe PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_RegisterIsochBuffer PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_ResetPipe PROTO :DWORD,:DWORD
+WinUsb_ResetPipeAsync PROTO :DWORD,:DWORD,:DWORD
+WinUsb_SetCurrentAlternateSetting PROTO :DWORD,:DWORD
+WinUsb_SetCurrentAlternateSettingAsync PROTO :DWORD,:DWORD,:DWORD
+WinUsb_SetPipePolicy PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_SetPowerPolicy PROTO :DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_UnregisterIsochBuffer PROTO :DWORD
+WinUsb_WriteIsochPipe PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_WriteIsochPipeAsap PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+WinUsb_WritePipe PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+

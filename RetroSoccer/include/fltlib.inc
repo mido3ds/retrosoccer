@@ -1,0 +1,33 @@
+; ..\X86\fltLib.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+FilterAttach PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterAttachAtAltitude PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterClose PROTO :DWORD
+FilterConnectCommunicationPort PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterCreate PROTO :DWORD,:DWORD
+FilterDetach PROTO :DWORD,:DWORD,:DWORD
+FilterFindClose PROTO :DWORD
+FilterFindFirst PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterFindNext PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterGetDosName PROTO :DWORD,:DWORD,:DWORD
+FilterGetInformation PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterGetMessage PROTO :DWORD,:DWORD,:DWORD,:DWORD
+FilterInstanceClose PROTO :DWORD
+FilterInstanceCreate PROTO :DWORD,:DWORD,:DWORD,:DWORD
+FilterInstanceFindClose PROTO :DWORD
+FilterInstanceFindFirst PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterInstanceFindNext PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterInstanceGetInformation PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterLoad PROTO :DWORD
+FilterReplyMessage PROTO :DWORD,:DWORD,:DWORD
+FilterSendMessage PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterUnload PROTO :DWORD
+FilterVolumeClose PROTO :DWORD
+FilterVolumeFindClose PROTO :DWORD
+FilterVolumeFindFirst PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterVolumeFindNext PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterVolumeInstanceFindClose PROTO :DWORD
+FilterVolumeInstanceFindFirst PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FilterVolumeInstanceFindNext PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+

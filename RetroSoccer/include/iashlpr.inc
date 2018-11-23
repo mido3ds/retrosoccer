@@ -1,0 +1,16 @@
+; ..\X86\iashlpr.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AllocateAttributes PROTO :DWORD,:DWORD
+ConfigureIas PROTO
+DoRequest PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DoRequestAsync PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+FreeAttributes PROTO :DWORD,:DWORD
+GetOptionIas PROTO :DWORD,:DWORD
+InitializeIas PROTO :DWORD
+MemAllocIas PROTO :DWORD
+MemFreeIas PROTO :DWORD
+MemReallocIas PROTO :DWORD,:DWORD
+SetOptionIas PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+ShutdownIas PROTO
+

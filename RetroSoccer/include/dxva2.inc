@@ -1,0 +1,41 @@
+; ..\X86\dxva2.lib PROTOTYPES
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CapabilitiesRequestAndCapabilitiesReply PROTO :DWORD,:DWORD,:DWORD
+DXVA2CreateDirect3DDeviceManager9 PROTO :DWORD,:DWORD
+DXVA2CreateVideoService PROTO :DWORD,:DWORD,:DWORD
+DXVAHD_CreateDevice PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+DegaussMonitor PROTO :DWORD
+DestroyPhysicalMonitor PROTO :DWORD
+DestroyPhysicalMonitors PROTO :DWORD,:DWORD
+GetCapabilitiesStringLength PROTO :DWORD,:DWORD
+GetMonitorBrightness PROTO :DWORD,:DWORD,:DWORD,:DWORD
+GetMonitorCapabilities PROTO :DWORD,:DWORD,:DWORD
+GetMonitorColorTemperature PROTO :DWORD,:DWORD
+GetMonitorContrast PROTO :DWORD,:DWORD,:DWORD,:DWORD
+GetMonitorDisplayAreaPosition PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetMonitorDisplayAreaSize PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetMonitorRedGreenOrBlueDrive PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetMonitorRedGreenOrBlueGain PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+GetMonitorTechnologyType PROTO :DWORD,:DWORD
+GetNumberOfPhysicalMonitorsFromHMONITOR PROTO :DWORD,:DWORD
+GetNumberOfPhysicalMonitorsFromIDirect3DDevice9 PROTO :DWORD,:DWORD
+GetPhysicalMonitorsFromHMONITOR PROTO :DWORD,:DWORD,:DWORD
+GetPhysicalMonitorsFromIDirect3DDevice9 PROTO :DWORD,:DWORD,:DWORD
+GetTimingReport PROTO :DWORD,:DWORD
+GetVCPFeatureAndVCPFeatureReply PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+OPMGetVideoOutputsFromHMONITOR PROTO :DWORD,:DWORD,:DWORD,:DWORD
+OPMGetVideoOutputsFromIDirect3DDevice9Object PROTO :DWORD,:DWORD,:DWORD,:DWORD
+RestoreMonitorFactoryColorDefaults PROTO :DWORD
+RestoreMonitorFactoryDefaults PROTO :DWORD
+SaveCurrentMonitorSettings PROTO :DWORD
+SaveCurrentSettings PROTO :DWORD
+SetMonitorBrightness PROTO :DWORD,:DWORD
+SetMonitorColorTemperature PROTO :DWORD,:DWORD
+SetMonitorContrast PROTO :DWORD,:DWORD
+SetMonitorDisplayAreaPosition PROTO :DWORD,:DWORD,:DWORD
+SetMonitorDisplayAreaSize PROTO :DWORD,:DWORD,:DWORD
+SetMonitorRedGreenOrBlueDrive PROTO :DWORD,:DWORD,:DWORD
+SetMonitorRedGreenOrBlueGain PROTO :DWORD,:DWORD,:DWORD
+SetVCPFeature PROTO :DWORD,:DWORD,:DWORD
+
