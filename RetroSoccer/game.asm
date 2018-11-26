@@ -20,12 +20,8 @@ onUpdate endp
 
 ; - game rendering
 onDraw proc t:double
-	invoke clearScreen, 0000ffffh
-
-	invoke drawLine, 0, 0, 500, 500
-	invoke drawRect, 50, 60, 200, 100
-	invoke drawEllipse, 0, 0, 30, 30
-
+	invoke clearScreen, 00ffffffh	
+	
 	ret
 onDraw endp
 

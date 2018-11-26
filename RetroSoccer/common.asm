@@ -56,6 +56,8 @@ start proc
 	mov __stdin, eax
 	invoke CreateFile, offset CONOUT, GENERIC_READ or GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, NULL, NULL
 	mov __stdout, eax
+	mov mousePos.x, 0
+	mov mousePos.y, 0
 
 	mov   wc.cbSize, SIZEOF WNDCLASSEX                   
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
@@ -265,7 +267,8 @@ readConsole endp
 isKeyPressed proc key:VKey
 	xor eax, eax
     invoke GetAsyncKeyState, key
-	and ax, 8000h
+	and eax, 8000h
+	shr eax, 15
     ret
 isKeyPressed endp
 
