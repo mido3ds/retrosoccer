@@ -77,8 +77,8 @@ start proc
     invoke RegisterClassEx, addr wc
 
 	invoke getTitleHeight
-	add eax, WND_HEIGHT
-	mov __totalHeight, eax
+	mov __totalHeight, WND_HEIGHT+7  ;; a hack
+	add __totalHeight, eax
 
     invoke CreateWindowEx,NULL,\ 
                 addr MAIN_CLASS_NAME,\ 
@@ -86,7 +86,7 @@ start proc
                 WS_OVERLAPPEDWINDOW and not WS_THICKFRAME and not WS_MAXIMIZEBOX,\ 
                 CW_USEDEFAULT,\ 
                 CW_USEDEFAULT,\ 
-                WND_WIDTH,\ 
+                WND_WIDTH+16,\   ;; a hack
                 __totalHeight,\ 
                 NULL,\ 
                 NULL,\ 
@@ -356,7 +356,7 @@ deleteBitmap endp
 
 ; - render bitmap on point (xs, ys) of screen, (xb, yb) is starting point of bitmap, 
 ; - (w, h) is how many pixels it would take from the bitmap
-renderBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32
+renderBitmap proc xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:uint32, h:uint32
 	local bitmapDC:HDC, oldBitmap:HBITMAP
 
 	invoke CreateCompatibleDC, __hdcTemp
@@ -368,6 +368,20 @@ renderBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:u
 	invoke DeleteDC, bitmapDC
     ret
 renderBitmap endp
+
+TransparentBlt proto :dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword
+renderTBitmap proc xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
+	local bitmapDC:HDC, oldBitmap:HBITMAP
+
+	invoke CreateCompatibleDC, __hdcTemp
+	mov bitmapDC, eax
+	invoke SelectObject, bitmapDC, bitmap
+	mov oldBitmap, eax
+	invoke TransparentBlt, __hdcTemp, xs, ys, w, h, bitmapDC, xb, yb, w, h, bkgColor
+	invoke SelectObject, bitmapDC, oldBitmap
+	invoke DeleteDC, bitmapDC
+    ret
+renderTBitmap endp
 
 ; - draw text in buffer in rectangle defined by (x1, x2, y1, y2), according to given format
 ; format values:

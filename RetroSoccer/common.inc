@@ -19,7 +19,7 @@ SUCCESS equ		0
 endif
 
 WND_WIDTH    equ	800
-WND_HEIGHT   equ	600 
+WND_HEIGHT   equ	500 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							types   								   ;;
@@ -84,7 +84,10 @@ deleteBitmap proto bitmap:Bitmap
 
 ; - render bitmap on point (xs, ys) of screen, (xb, yb) is starting point of bitmap, 
 ; - (w, h) is how many pixels it would take from the bitmap
-renderBitmap proto bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32
+renderBitmap proto xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:uint32, h:uint32
+
+; - render transparent bitmap, takes background color to remove
+renderTBitmap proto xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
 
 ; - draw text in buffer in rectangle defined by (x1, x2, y1, y2), according to given format
 ; format values:
