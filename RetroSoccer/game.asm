@@ -1,7 +1,7 @@
 include common.inc
 
-drawRedPlayer proto x:uint32,y:uint32
-drawBluePlayer proto x:uint32,y:uint32
+drawRedPlayer proto x:uint32,y:uint32,lvl:int32
+drawBluePlayer proto x:uint32,y:uint32,lvl:int32
 drawBall proto x:uint32,y:uint32
 drawField proto 
 
@@ -18,10 +18,14 @@ field Bitmap ?
 sprites Bitmap ?
 bluePen Pen ?
 redPen Pen ?
+lastMousePos IVec2 <>
+mouseLvl int32 0
 
 stickY uint32 250, 250, 250, 250
 stickX uint32 39, 168, 336, 534
 stickSelected bool FALSE, FALSE, FALSE, FALSE
+stickUpperLimit uint32 472, 400, 306, 348
+stickLowerLimit uint32 25, 98, 194, 150
 
 playerOffsetY int32 0-PLAYER_HEIGHT/2, ;s0
 		-74-PLAYER_HEIGHT/2, ;s1
@@ -41,6 +45,10 @@ game_asm:
 
 ; - called before window is shown
 onCreate proc
+	mov lastMousePos.x, 0
+	mov lastMousePos.y, 0
+	mov mouseLvl, 0
+
 	invoke loadBitmap, offset fieldFileName
 	mov field, eax
 	invoke loadBitmap, offset spritesFileName
@@ -70,6 +78,45 @@ onUpdate proc t:double
 	;debugging
 	printf 13, 0 ;remove last line
 	printf "mousePos {x=%i, y=%i} \\ ", mousePos.x, mousePos.y
+
+	; compute mouseLvl
+	; mouseLvl = mousePos.x - lastMousePos.x
+	mov eax, mousePos.x
+	sub eax, lastMousePos.x
+	mov mouseLvl, eax
+
+	cmp mouseLvl, 0
+	jl l0
+		.IF (mouseLvl < 2)
+			mov mouseLvl, 0
+		.ELSEIF (mouseLvl < 10)
+			mov mouseLvl, 10
+		.ELSE
+			mov mouseLvl, 15
+		.ENDIF
+	jmp l3
+	l0:
+
+	cmp mouseLvl, -2
+	jl l1
+		mov mouseLvl, 0
+	jmp l3
+	l1:
+
+	cmp mouseLvl, -10
+	jl l2
+		mov mouseLvl, -10
+	l2:
+		mov mouseLvl, -15
+	l3:
+
+	push mousePos.x
+	push mousePos.y
+	pop lastMousePos.y
+	pop lastMousePos.x
+
+	printf "mouseLvl=%i \\ ", mouseLvl
+
 	
 	; get selected keys
 	invoke isKeyPressed, VK_Q
@@ -110,6 +157,30 @@ onUpdate proc t:double
 
 	printf " \\ s0=%i, s1=%i, s2=%i, s3=%i", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
 
+	; mov sticks on y
+	mov eax, 0
+	.WHILE (eax < 4)
+		.IF (stickSelected[eax] == TRUE)
+			mov ebx, mousePos.y
+			mov stickY[eax *4], ebx
+
+			; upper
+			.IF (ebx > stickUpperLimit[eax *4])
+				; stickY[i] = stickUpperLimit[i]
+				push stickUpperLimit[eax *4]
+				pop stickY[eax *4]
+			.ENDIF
+
+			; lower 
+			.IF (ebx < stickLowerLimit[eax *4])
+				; stickY[i] = stickLowerLimit[i]
+				push stickLowerLimit[eax *4]
+				pop stickY[eax *4]
+			.ENDIF
+		.ENDIF
+		inc eax
+	.ENDW
+
 	ret
 onUpdate endp
 
@@ -141,7 +212,13 @@ onDraw proc t:double
 		add edx, playerOffsetY[eax *4]
 
 		push eax
-		invoke drawBluePlayer, ecx, edx 
+
+		.IF (stickSelected[ebx] == TRUE)
+			invoke drawBluePlayer, ecx, edx, mouseLvl
+		.ELSE
+			invoke drawBluePlayer, ecx, edx, 0
+		.ENDIF
+
 		pop eax
 
 		inc eax
@@ -155,7 +232,7 @@ onDraw proc t:double
 		sub eax, stickX[edx *4]
 
 		push edx
-		invoke drawLine, eax, 0, eax, WND_HEIGHT
+		;invoke drawLine, eax, 0, eax, WND_HEIGHT
 		pop edx
 
 		inc edx
@@ -173,7 +250,7 @@ onDraw proc t:double
 		add edx, playerOffsetY[eax *4]
 
 		push eax
-		invoke drawRedPlayer, ecx, edx 
+		;invoke drawRedPlayer, ecx, edx, 0
 		pop eax
 
 		inc eax
@@ -185,12 +262,14 @@ onDraw endp
 
 BKG_CLR equ 5a5754h
 
-drawBluePlayer proc x:uint32,y:uint32
+drawBluePlayer proc x:uint32,y:uint32, lvl:int32
 	local legX:uint32, legY:uint32
 
 	push x
 	pop legX
-	add legX, 8
+	add legX, 2
+	mov eax, lvl
+	add legX, eax
 
 	push y
 	pop legY
@@ -204,12 +283,14 @@ drawBluePlayer proc x:uint32,y:uint32
 	ret
 drawBluePlayer endp
 
-drawRedPlayer proc x:uint32,y:uint32	
+drawRedPlayer proc x:uint32,y:uint32, lvl:int32
 	local legX:uint32, legY:uint32
 
 	push x
 	pop legX
 	sub legX, 5
+	mov eax, lvl
+	add legX, eax
 
 	push y
 	pop legY
