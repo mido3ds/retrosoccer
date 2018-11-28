@@ -8,6 +8,8 @@ drawField proto
 PLAYER_HEIGHT equ 31
 PLAYER_WIDTH equ 21
 BALL_LENGTH equ 18
+LEG_WIDTH equ 19
+LEG_HEIGHT equ 13
 
 .DATA
 fieldFileName db "assets/field.bmp",0
@@ -137,11 +139,39 @@ onDraw endp
 BKG_CLR equ 5a5754h
 
 drawBluePlayer proc x:uint32,y:uint32
-	invoke renderTBitmap, x, y, sprites, 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
+	local legX:uint32, legY:uint32
+
+	push x
+	pop legX
+	add legX, 8
+
+	push y
+	pop legY
+	add legY, 4
+	invoke renderTBitmap, legX, legY, sprites, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
+
+	add legY, PLAYER_HEIGHT/2+LEG_HEIGHT/2-9
+	invoke renderTBitmap, legX, legY, sprites, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
+
+	invoke renderTBitmap, x, y, sprites, 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
 	ret
 drawBluePlayer endp
 
-drawRedPlayer proc x:uint32,y:uint32
+drawRedPlayer proc x:uint32,y:uint32	
+	local legX:uint32, legY:uint32
+
+	push x
+	pop legX
+	sub legX, 5
+
+	push y
+	pop legY
+	add legY, 4
+	invoke renderTBitmap, legX, legY, sprites, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
+
+	add legY, PLAYER_HEIGHT/2+LEG_HEIGHT/2-11
+	invoke renderTBitmap, legX, legY, sprites, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
+
 	invoke renderTBitmap, x, y, sprites, 63, 155, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
 	ret
 drawRedPlayer endp
