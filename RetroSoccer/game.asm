@@ -94,7 +94,7 @@ onDraw proc t:double
 		sub eax, stickX[edx *4]
 
 		push edx
-	;	invoke drawLine, eax, 0, eax, WND_HEIGHT
+		invoke drawLine, eax, 0, eax, WND_HEIGHT
 		pop edx
 
 		inc edx
