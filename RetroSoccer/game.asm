@@ -1,23 +1,37 @@
 include common.inc
 
-drawGoalKeeper proto x:uint32,y:uint32
-drawPlayer proto x:uint32,y:uint32
+drawRedPlayer proto x:uint32,y:uint32
+drawBluePlayer proto x:uint32,y:uint32
 drawBall proto x:uint32,y:uint32
 drawField proto 
 
-.CODE
-fieldFileName db "assets/field.bmp",0
-playersFileName db "assets/players.bmp",0
+PLAYER_HEIGHT equ 31
+PLAYER_WIDTH equ 21
+BALL_LENGTH equ 18
 
 .DATA
-fieldBmp Bitmap ?
-spritesheetBmp Bitmap ?
+fieldFileName db "assets/field.bmp",0
+spritesFileName db "assets/sprites2.bmp",0
+field Bitmap ?
+sprites Bitmap ?
+bluePen Pen ?
+redPen Pen ?
 
-stickPos uint32 250, 250, 250, 250
+stickY uint32 250, 250, 250, 250
+stickX uint32 39, 168, 336, 534
 
-.CONST
-PLAYER_Y dword -15, -74-15, 74-15, -167-15, -84-15, -15, 83-15, 2*83-15, 125-250-15, -15, 125-15
-STICK_X  uint32 44, 144, 344, 522
+playerOffsetY int32 0-PLAYER_HEIGHT/2, ;s0
+		-74-PLAYER_HEIGHT/2, ;s1
+		+74-PLAYER_HEIGHT/2, 
+		-2*84-PLAYER_HEIGHT/2, ;s2
+		-84-PLAYER_HEIGHT/2, 
+		-PLAYER_HEIGHT/2, 
+		+84-PLAYER_HEIGHT/2, 
+		+2*84-PLAYER_HEIGHT/2,
+		-125-PLAYER_HEIGHT/2, ;s3
+		-PLAYER_HEIGHT/2, 
+		+125-PLAYER_HEIGHT/2
+playerStick uint32 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
 
 .CODE
 game_asm:
@@ -25,9 +39,14 @@ game_asm:
 ; - called before window is shown
 onCreate proc
 	invoke loadBitmap, offset fieldFileName
-	mov fieldBmp, eax
-	invoke loadBitmap, offset playersFileName
-	mov spritesheetBmp, eax
+	mov field, eax
+	invoke loadBitmap, offset spritesFileName
+	mov sprites, eax
+
+	invoke createPen, 3, 0ff0000h ;blue
+	mov bluePen, eax
+	invoke createPen, 3, 0000ffh ;red
+	mov redPen, eax
 
 	;invoke hideMouse
 	ret
@@ -35,70 +54,105 @@ onCreate endp
 
 ; - called after window is closed
 onDestroy proc
-	invoke deleteBitmap, fieldBmp
-	invoke deleteBitmap, spritesheetBmp
+	invoke deleteBitmap, field
+	invoke deleteBitmap, sprites
 	ret
 onDestroy endp
 
 ; - game logic
 onUpdate proc t:double
-	printfln "mousePos {x=%i, y=%i}", mousePos.x, mousePos.y
+	;debugging
+	printf 13, 0 ;remove last line
+	printf "mousePos {x=%i, y=%i}", mousePos.x, mousePos.y
+	
 	ret
 onUpdate endp
 
 ; - game rendering
 onDraw proc t:double
 	invoke drawField
+	invoke drawBall, WND_WIDTH/2-BALL_LENGTH/2, WND_HEIGHT/2-BALL_LENGTH/2
 
-	mov eax, [stickPos+0*4]
-	add eax, [PLAYER_Y+0*4]
-	invoke drawGoalKeeper, STICK_X,  eax
+	; draw sticks
+	invoke setPen, bluePen
+	mov edx, 0
+	.WHILE (edx < 4)
+		mov eax, PLAYER_WIDTH/2
+		add eax, stickX[edx *4]
 
-	mov ebx, 1
-	.WHILE (ebx < 3)
-		mov eax, [stickPos+1*4]
-		add eax, [PLAYER_Y+ebx*4];y
-		invoke drawPlayer, [STICK_X+1*4], eax
-
-		inc ebx
+		push edx
+		invoke drawLine, eax, 0, eax, WND_HEIGHT
+		pop edx
+		inc edx
 	.ENDW
-	.WHILE (ebx < 8)
-		mov eax, [stickPos+2*4]
-		add eax, [PLAYER_Y+ebx*4];y
-		invoke drawPlayer, [STICK_X+2*4], eax
+	invoke setPen, redPen
+	mov edx, 0
+	.WHILE (edx < 4)
+		mov eax, WND_WIDTH-PLAYER_WIDTH/2
+		sub eax, stickX[edx *4]
 
-		inc ebx
-	.ENDW
-	.WHILE (ebx < 11)
-		mov eax, [stickPos+3*4]
-		add eax, [PLAYER_Y+ebx*4];y
-		invoke drawPlayer, [STICK_X+3*4], eax
+		push edx
+	;	invoke drawLine, eax, 0, eax, WND_HEIGHT
+		pop edx
 
-		inc ebx
+		inc edx
 	.ENDW
+
+	mov eax, 0
+	.WHILE (eax < 11)
+		mov ebx, playerStick[eax *4]
+
+		mov ecx, stickX[ebx *4]
+		mov edx, stickY[ebx *4]
+		add edx, playerOffsetY[eax *4]
+
+		push eax
+		invoke drawBluePlayer, ecx, edx 
+		pop eax
+
+		inc eax
+	.ENDW
+
+	mov eax, 0
+	.WHILE (eax < 11)
+		mov ebx, playerStick[eax *4]
+
+		mov ecx, WND_WIDTH-PLAYER_WIDTH
+		sub ecx, stickX[ebx *4]
+
+		mov edx, stickY[ebx *4]
+		add edx, playerOffsetY[eax *4]
+
+		push eax
+		invoke drawRedPlayer, ecx, edx 
+		pop eax
+
+		inc eax
+	.ENDW
+
 	ret
 onDraw endp
 
 
 BKG_CLR equ 5a5754h
 
-drawPlayer proc x:uint32,y:uint32
-	invoke renderTBitmap, x, y, spritesheetBmp, 137, 31, 21, 31, BKG_CLR
+drawBluePlayer proc x:uint32,y:uint32
+	invoke renderTBitmap, x, y, sprites, 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
 	ret
-drawPlayer endp
+drawBluePlayer endp
 
-drawGoalKeeper proc x:uint32,y:uint32
-	invoke renderTBitmap, x, y, spritesheetBmp, 105, 186, 21, 31, BKG_CLR
+drawRedPlayer proc x:uint32,y:uint32
+	invoke renderTBitmap, x, y, sprites, 63, 155, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
 	ret
-drawGoalKeeper endp
+drawRedPlayer endp
 
 drawBall proc x:uint32,y:uint32
-	invoke renderTBitmap, x, y, spritesheetBmp, 198, 18, 18, 18, BKG_CLR
+	invoke renderTBitmap, x, y, sprites, 198, 18, BALL_LENGTH, BALL_LENGTH, BKG_CLR
 	ret
 drawBall endp
 
 drawField proc
-	invoke renderBitmap, 0, 0, fieldBmp, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, 0, 0, field, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 drawField endp
 
