@@ -21,6 +21,7 @@ redPen Pen ?
 
 stickY uint32 250, 250, 250, 250
 stickX uint32 39, 168, 336, 534
+stickSelected bool FALSE, FALSE, FALSE, FALSE
 
 playerOffsetY int32 0-PLAYER_HEIGHT/2, ;s0
 		-74-PLAYER_HEIGHT/2, ;s1
@@ -63,10 +64,52 @@ onDestroy endp
 
 ; - game logic
 onUpdate proc t:double
+	local numOfSelected:uint32
+	mov numOfSelected, 0
+
 	;debugging
 	printf 13, 0 ;remove last line
-	printf "mousePos {x=%i, y=%i}", mousePos.x, mousePos.y
+	printf "mousePos {x=%i, y=%i} \\ ", mousePos.x, mousePos.y
 	
+	; get selected keys
+	invoke isKeyPressed, VK_Q
+	mov stickSelected[0], al
+	printf "Q=%i, ", eax
+	.IF (stickSelected[0] == TRUE)
+		inc numOfSelected
+	.ENDIF
+
+	invoke isKeyPressed, VK_W
+	mov stickSelected[1], al
+	printf "W=%i, ", eax
+	.IF (stickSelected[1] == TRUE)
+		inc numOfSelected
+	.ENDIF
+
+	invoke isKeyPressed, VK_E
+	mov stickSelected[2], al
+	printf "E=%i, ", eax
+	.IF (stickSelected[2] == TRUE)
+		inc numOfSelected
+		.IF (numOfSelected > 2)
+			dec numOfSelected
+			mov stickSelected[2], FALSE
+		.ENDIF
+	.ENDIF
+
+	invoke isKeyPressed, VK_R
+	mov stickSelected[3], al
+	printf "R=%i, ", eax
+	.IF (stickSelected[3] == TRUE)
+		inc numOfSelected
+		.IF (numOfSelected > 2)
+			dec numOfSelected
+			mov stickSelected[3], FALSE
+		.ENDIF
+	.ENDIF
+
+	printf " \\ s0=%i, s1=%i, s2=%i, s3=%i", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
+
 	ret
 onUpdate endp
 
@@ -75,7 +118,7 @@ onDraw proc t:double
 	invoke drawField
 	invoke drawBall, WND_WIDTH/2-BALL_LENGTH/2, WND_HEIGHT/2-BALL_LENGTH/2
 
-	; draw sticks
+	; draw blue sticks
 	invoke setPen, bluePen
 	mov edx, 0
 	.WHILE (edx < 4)
@@ -87,19 +130,8 @@ onDraw proc t:double
 		pop edx
 		inc edx
 	.ENDW
-	invoke setPen, redPen
-	mov edx, 0
-	.WHILE (edx < 4)
-		mov eax, WND_WIDTH-PLAYER_WIDTH/2
-		sub eax, stickX[edx *4]
 
-		push edx
-		invoke drawLine, eax, 0, eax, WND_HEIGHT
-		pop edx
-
-		inc edx
-	.ENDW
-
+	; draw blue players
 	mov eax, 0
 	.WHILE (eax < 11)
 		mov ebx, playerStick[eax *4]
@@ -115,6 +147,21 @@ onDraw proc t:double
 		inc eax
 	.ENDW
 
+	; draw red sticks
+	invoke setPen, redPen
+	mov edx, 0
+	.WHILE (edx < 4)
+		mov eax, WND_WIDTH-PLAYER_WIDTH/2
+		sub eax, stickX[edx *4]
+
+		push edx
+		invoke drawLine, eax, 0, eax, WND_HEIGHT
+		pop edx
+
+		inc edx
+	.ENDW
+
+	; draw red players
 	mov eax, 0
 	.WHILE (eax < 11)
 		mov ebx, playerStick[eax *4]
@@ -148,12 +195,12 @@ drawBluePlayer proc x:uint32,y:uint32
 	push y
 	pop legY
 	add legY, 4
-	invoke renderTBitmap, legX, legY, sprites, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
+	invoke renderTBitmap, sprites, legX, legY, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
 
 	add legY, PLAYER_HEIGHT/2+LEG_HEIGHT/2-9
-	invoke renderTBitmap, legX, legY, sprites, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
+	invoke renderTBitmap, sprites, legX, legY, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
 
-	invoke renderTBitmap, x, y, sprites, 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
+	invoke renderTBitmap, sprites, x, y, 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
 	ret
 drawBluePlayer endp
 
@@ -167,22 +214,22 @@ drawRedPlayer proc x:uint32,y:uint32
 	push y
 	pop legY
 	add legY, 4
-	invoke renderTBitmap, legX, legY, sprites, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
+	invoke renderTBitmap, sprites, legX, legY, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
 
 	add legY, PLAYER_HEIGHT/2+LEG_HEIGHT/2-11
-	invoke renderTBitmap, legX, legY, sprites, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
+	invoke renderTBitmap, sprites, legX, legY, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
 
-	invoke renderTBitmap, x, y, sprites, 63, 155, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
+	invoke renderTBitmap, sprites, x, y, 63, 155, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
 	ret
 drawRedPlayer endp
 
 drawBall proc x:uint32,y:uint32
-	invoke renderTBitmap, x, y, sprites, 198, 18, BALL_LENGTH, BALL_LENGTH, BKG_CLR
+	invoke renderTBitmap, sprites, x, y, 198, 18, BALL_LENGTH, BALL_LENGTH, BKG_CLR
 	ret
 drawBall endp
 
 drawField proc
-	invoke renderBitmap, 0, 0, field, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, field, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 drawField endp
 

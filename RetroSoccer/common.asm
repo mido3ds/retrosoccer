@@ -356,7 +356,7 @@ deleteBitmap endp
 
 ; - render bitmap on point (xs, ys) of screen, (xb, yb) is starting point of bitmap, 
 ; - (w, h) is how many pixels it would take from the bitmap
-renderBitmap proc xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:uint32, h:uint32
+renderBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32
 	local bitmapDC:HDC, oldBitmap:HBITMAP
 
 	invoke CreateCompatibleDC, __hdcTemp
@@ -370,7 +370,7 @@ renderBitmap proc xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:u
 renderBitmap endp
 
 TransparentBlt proto :dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword
-renderTBitmap proc xs:uint32, ys:uint32, bitmap:Bitmap, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
+renderTBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
 	local bitmapDC:HDC, oldBitmap:HBITMAP
 
 	invoke CreateCompatibleDC, __hdcTemp
