@@ -1,9 +1,13 @@
 include common.inc
 
-drawRedPlayer proto x:uint32,y:uint32,lvl:int32
-drawBluePlayer proto x:uint32,y:uint32,lvl:int32
+drawBluePlayer proto playerNumber:uint32
 drawBall proto x:uint32,y:uint32
 drawField proto 
+getBoundingBox proto x:uint32, y:uint32, w:uint32, h:uint32, x1:ptr uint32, y1:ptr uint32
+hasCollided proto x0:uint32, y0:uint32, x1:uint32, y1:uint32, x01:uint32, y01:uint32, x11:uint32, y11:uint32
+updateLegsPositions proto playerNumber:uint32
+updatePlayersPositions proto playerNumber:uint32
+
 
 PLAYER_HEIGHT equ 31
 PLAYER_WIDTH equ 21
@@ -18,6 +22,8 @@ field Bitmap ?
 sprites Bitmap ?
 bluePen Pen ?
 redPen Pen ?
+
+ballPos IVec2 <>
 lastMousePos IVec2 <>
 mouseLvl int32 0
 
@@ -40,6 +46,13 @@ playerOffsetY int32 0-PLAYER_HEIGHT/2, ;s0
 		+125-PLAYER_HEIGHT/2
 playerStick uint32 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
 
+leftLegX uint32 11 dup(0)
+leftLegY uint32 11 dup(0)
+rightLegX uint32 11 dup(0)
+rightLegY uint32 11 dup(0)
+playerX uint32 11 dup(0)
+playerY uint32 11 dup(0)
+
 .CODE
 game_asm:
 
@@ -48,6 +61,9 @@ onCreate proc
 	mov lastMousePos.x, 0
 	mov lastMousePos.y, 0
 	mov mouseLvl, 0
+
+	mov ballPos.x, 356
+	mov ballPos.y, 245
 
 	invoke loadBitmap, offset fieldFileName
 	mov field, eax
@@ -72,12 +88,18 @@ onDestroy endp
 
 ; - game logic
 onUpdate proc t:double
-	local numOfSelected:uint32
+	local numOfSelected:uint32, ballPos2:IVec2, x2:uint32, y2:uint32, col:bool
 	mov numOfSelected, 0
+	mov col, FALSE
+
+	push mousePos.x
+	pop ballPos.x
+	push mousePos.y
+	pop ballPos.y
 
 	;debugging
 	printf 13, 0 ;remove last line
-	printf "mousePos {x=%i, y=%i} \\ ", mousePos.x, mousePos.y
+	printf "mousePos {x=%i, y=%i}\\", mousePos.x, mousePos.y
 
 	; compute mouseLvl
 	; mouseLvl = mousePos.x - lastMousePos.x
@@ -115,9 +137,8 @@ onUpdate proc t:double
 	pop lastMousePos.y
 	pop lastMousePos.x
 
-	printf "mouseLvl=%i \\ ", mouseLvl
+	printf "mouseLvl=%i\\", mouseLvl
 
-	
 	; get selected keys
 	invoke isKeyPressed, VK_Q
 	mov stickSelected[0], al
@@ -146,7 +167,7 @@ onUpdate proc t:double
 
 	invoke isKeyPressed, VK_R
 	mov stickSelected[3], al
-	printf "R=%i, ", eax
+	printf "R=%i", eax
 	.IF (stickSelected[3] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
@@ -155,7 +176,7 @@ onUpdate proc t:double
 		.ENDIF
 	.ENDIF
 
-	printf " \\ s0=%i, s1=%i, s2=%i, s3=%i", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
+	printf "\\s0=%i, s1=%i, s2=%i, s3=%i", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
 
 	; mov sticks on y
 	mov eax, 0
@@ -181,13 +202,56 @@ onUpdate proc t:double
 		inc eax
 	.ENDW
 
+	; collision
+	invoke getBoundingBox, ballPos.x, ballPos.y, BALL_LENGTH, BALL_LENGTH, addr ballPos2.x, addr ballPos2.y
+	; left legs
+	mov edx, 0
+	.WHILE (edx < 11) 
+		push edx
+		invoke getBoundingBox, leftLegX[edx *4], leftLegY[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
+		pop edx
+
+		push edx
+		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
+							leftLegX[edx *4], leftLegY[edx *4], x2, y2
+		.IF (eax == TRUE)
+			mov col, TRUE
+			.BREAK
+		.ENDIF
+		pop edx
+		 
+		inc edx		
+	.ENDW
+	; right legs
+	mov edx, 0
+	.WHILE (edx < 11) 
+		push edx
+		invoke getBoundingBox, rightLegX[edx *4], rightLegY[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
+		pop edx
+
+		push edx
+		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
+							rightLegX[edx *4], rightLegY[edx *4], x2, y2
+		.IF (eax == TRUE)
+			mov col, TRUE
+			.BREAK
+		.ENDIF
+		pop edx
+		 
+		inc edx		
+	.ENDW
+
+	printfln "\\collided=%i", col
+
 	ret
 onUpdate endp
 
 ; - game rendering
 onDraw proc t:double
+	local playerNumber:uint32
+
 	invoke drawField
-	invoke drawBall, WND_WIDTH/2-BALL_LENGTH/2, WND_HEIGHT/2-BALL_LENGTH/2
+	invoke drawBall, ballPos.x, ballPos.y
 
 	; draw blue sticks
 	invoke setPen, bluePen
@@ -205,22 +269,13 @@ onDraw proc t:double
 	; draw blue players
 	mov eax, 0
 	.WHILE (eax < 11)
-		mov ebx, playerStick[eax *4]
+		mov playerNumber, eax
 
-		mov ecx, stickX[ebx *4]
-		mov edx, stickY[ebx *4]
-		add edx, playerOffsetY[eax *4]
+		invoke updatePlayersPositions, playerNumber
+		invoke updateLegsPositions, playerNumber
+		invoke drawBluePlayer, playerNumber
 
-		push eax
-
-		.IF (stickSelected[ebx] == TRUE)
-			invoke drawBluePlayer, ecx, edx, mouseLvl
-		.ELSE
-			invoke drawBluePlayer, ecx, edx, 0
-		.ENDIF
-
-		pop eax
-
+		mov eax, playerNumber
 		inc eax
 	.ENDW
 
@@ -262,47 +317,14 @@ onDraw endp
 
 BKG_CLR equ 5a5754h
 
-drawBluePlayer proc x:uint32,y:uint32, lvl:int32
-	local legX:uint32, legY:uint32
+drawBluePlayer proc playerNumber:uint32
+	mov ebx, playerNumber
 
-	push x
-	pop legX
-	add legX, 2
-	mov eax, lvl
-	add legX, eax
-
-	push y
-	pop legY
-	add legY, 4
-	invoke renderTBitmap, sprites, legX, legY, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
-
-	add legY, PLAYER_HEIGHT/2+LEG_HEIGHT/2-9
-	invoke renderTBitmap, sprites, legX, legY, 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
-
-	invoke renderTBitmap, sprites, x, y, 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
+	invoke renderTBitmap, sprites, leftLegX[ebx *4], leftLegY[ebx *4], 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;left leg
+	invoke renderTBitmap, sprites, rightLegX[ebx *4], rightLegY[ebx *4], 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;right leg
+	invoke renderTBitmap, sprites, playerX[ebx *4], playerY[ebx *4], 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
 	ret
 drawBluePlayer endp
-
-drawRedPlayer proc x:uint32,y:uint32, lvl:int32
-	local legX:uint32, legY:uint32
-
-	push x
-	pop legX
-	sub legX, 5
-	mov eax, lvl
-	add legX, eax
-
-	push y
-	pop legY
-	add legY, 4
-	invoke renderTBitmap, sprites, legX, legY, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;upper leg
-
-	add legY, PLAYER_HEIGHT/2+LEG_HEIGHT/2-11
-	invoke renderTBitmap, sprites, legX, legY, 179, 52, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;lower leg
-
-	invoke renderTBitmap, sprites, x, y, 63, 155, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR
-	ret
-drawRedPlayer endp
 
 drawBall proc x:uint32,y:uint32
 	invoke renderTBitmap, sprites, x, y, 198, 18, BALL_LENGTH, BALL_LENGTH, BKG_CLR
@@ -314,4 +336,77 @@ drawField proc
 	ret
 drawField endp
 
+getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, x1Ptr:ptr uint32, y1Ptr:ptr uint32
+	mov eax, x
+	add eax, w
+	mov ebx, x1Ptr
+	mov [ebx], eax
+
+	mov eax, y
+	add eax, h
+	mov ebx, y1Ptr
+	mov [ebx], eax
+	ret
+getBoundingBox endp
+
+hasCollided proc x0:uint32, y0:uint32, x1:uint32, y1:uint32, x01:uint32, y01:uint32, x11:uint32, y11:uint32
+	mov eax, x01
+	mov ebx, y01
+	mov ecx, x11
+	mov edx, y11
+
+	.IF (((eax >= x0 && eax <=x1) && (ebx >= y0 && ebx <= y1)) || ((ecx >= x0 && ecx <= x1) && (edx >= y0 && edx <= y1)))
+		mov eax, TRUE
+	.ELSE
+		mov eax, FALSE
+	.ENDIF
+
+	ret
+hasCollided endp
+
+updateLegsPositions proc playerNumber:uint32
+	; get lvl
+	local lvl:int32
+
+	mov eax, playerNumber
+	mov ebx, playerStick[eax *4]
+
+	mov lvl, 0
+	.IF (stickSelected[ebx] == TRUE)
+		push mouseLvl
+		pop lvl
+	.ENDIF
+
+	mov ecx, playerX[eax *4]
+	mov edx, playerY[eax *4]
+
+	; left leg
+	add ecx, lvl
+	add ecx, 2
+	add edx, 4
+	mov leftLegX[eax *4], ecx
+	mov leftLegY[eax *4], edx
+
+	; right leg
+	add edx, PLAYER_HEIGHT/2+LEG_HEIGHT/2-9
+	mov rightLegX[eax *4], ecx
+	mov rightLegY[eax *4], edx
+
+	ret
+updateLegsPositions endp
+
+updatePlayersPositions proc playerNumber:uint32
+	mov eax, playerNumber
+	mov ebx, playerStick[eax *4]
+	
+	; calculate x,y
+	mov ecx, stickX[ebx *4]
+	mov edx, stickY[ebx *4]
+	add edx, playerOffsetY[eax *4]
+
+	; store x,y
+	mov playerX[eax *4], ecx
+	mov playerY[eax *4], edx
+	ret
+updatePlayersPositions endp
 end game_asm
