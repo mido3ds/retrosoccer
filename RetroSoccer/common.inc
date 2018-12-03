@@ -45,18 +45,18 @@ double typedef real8 ; 2.23*e–308 : 1.79*e308
 ;;							vectors  								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-IVec2 STRUCT
+vec STRUCT
 	x int32 ?
 	y int32 ?
-IVec2 ENDS
+vec ENDS
 
-IVec2_add proto dest:ptr IVec2, b:ptr IVec2
-IVec2_negX proto v:ptr IVec2
-IVec2_negY proto v:ptr IVec2
-IVec2_neg proto v:ptr IVec2
-IVec2_scalarMul proto s:uint32, v:ptr IVec2
-IVec2_cpy proto dest:ptr IVec2, src:ptr IVec2
-IVec2_set proto v:ptr IVec2, x:int32, y:int32
+vec_add proto dest:ptr vec, b:ptr vec
+vec_negX proto v:ptr vec
+vec_negY proto v:ptr vec
+vec_neg proto v:ptr vec
+vec_smul proto s:uint32, v:ptr vec
+vec_cpy proto dest:ptr vec, src:ptr vec
+vec_set proto v:ptr vec, x:int32, y:int32
 
 ; simple pseudo-random number generator (32 bit)
 ; implements "linear congruential generator" algorithm
@@ -610,7 +610,7 @@ isKeyPressed proto key:VKey
 
 ifndef EXCLUDE_EXTERNS
 	; - mouse position variables updated every time mouse moves
-	extern mousePos:IVec2
+	extern mousePos:vec
 endif
 
 ; eax=TRUE|FALSE

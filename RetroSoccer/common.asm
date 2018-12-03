@@ -22,7 +22,7 @@ onDraw proto
 
 ; public
 .DATA?
-mousePos IVec2 <>
+mousePos vec <>
 public mousePos
 
 ; private
@@ -540,9 +540,9 @@ clearScreen proc color:Color
 	ret
 clearScreen endp
 
-IVec2_scalarMul proc s:uint32, v:ptr IVec2
+vec_smul proc s:uint32, v:ptr vec
 	mov ebx, v
-	assume ebx:ptr IVec2
+	assume ebx:ptr vec
 	
 	mov ecx, s
 
@@ -555,13 +555,13 @@ IVec2_scalarMul proc s:uint32, v:ptr IVec2
 	mov [ebx].y, eax
 
 	ret
-IVec2_scalarMul endp
+vec_smul endp
 
-IVec2_cpy proc dest:ptr IVec2, src:ptr IVec2
+vec_cpy proc dest:ptr vec, src:ptr vec
 	mov eax, src
 	mov ebx, dest
-	assume eax:ptr IVec2
-	assume ebx:ptr IVec2
+	assume eax:ptr vec
+	assume ebx:ptr vec
 
 	push [eax].x
 	pop [ebx].x
@@ -569,11 +569,11 @@ IVec2_cpy proc dest:ptr IVec2, src:ptr IVec2
 	pop [ebx].y
 
 	ret
-IVec2_cpy endp
+vec_cpy endp
 
-IVec2_set proc v:ptr IVec2, x:int32, y:int32
+vec_set proc v:ptr vec, x:int32, y:int32
 	mov eax, v
-	assume eax:ptr IVec2
+	assume eax:ptr vec
 	
 	push x
 	pop [eax].x
@@ -581,42 +581,42 @@ IVec2_set proc v:ptr IVec2, x:int32, y:int32
 	pop [eax].y
 
 	ret
-IVec2_set endp
+vec_set endp
 
-IVec2_add proc dest:ptr IVec2, b:ptr IVec2
+vec_add proc dest:ptr vec, b:ptr vec
 	mov eax, b
-	assume eax:ptr IVec2
+	assume eax:ptr vec
 	mov ebx, [eax].x
 	mov ecx, [eax].y
 	
 	mov eax, dest
-	assume eax:ptr IVec2
+	assume eax:ptr vec
 	add [eax].x, ebx
 	add [eax].y, ecx
 	ret
-IVec2_add endp
+vec_add endp
 
-IVec2_negX proc v:ptr IVec2
+vec_negX proc v:ptr vec
 	mov eax, v
-	assume eax:ptr IVec2
+	assume eax:ptr vec
 	neg [eax].x
 	ret
-IVec2_negX endp
+vec_negX endp
 
-IVec2_negY proc v:ptr IVec2
+vec_negY proc v:ptr vec
 	mov eax, v
-	assume eax:ptr IVec2
+	assume eax:ptr vec
 	neg [eax].y
 	ret
-IVec2_negY endp
+vec_negY endp
 
-IVec2_neg proc v:ptr IVec2
+vec_neg proc v:ptr vec
 	mov eax, v
-	assume eax:ptr IVec2
+	assume eax:ptr vec
 	neg [eax].x
 	neg [eax].y
 	ret
-IVec2_neg endp
+vec_neg endp
 
 RAND_A equ 1103515245
 RAND_B equ 12345

@@ -32,7 +32,7 @@ RED_PLAYER_MOVING_DISTANCE equ 7
 KICK_DEFAULT_DIST equ 8
 PLAYER_COLOR_BLUE equ 0
 PLAYER_COLOR_RED equ 1
-MATCH_TOTAL_TIME equ 90*1000
+MATCH_TOTAL_TIME equ 50*1000
 
 ; sprite sheet info
 BKG_CLR equ 5a5754h
@@ -61,8 +61,8 @@ redPen Pen ?
 elapsedTime uint32 0
 
 ; ball
-ballPos IVec2 <>
-ballSpd IVec2 <>
+ballPos vec <>
+ballSpd vec <>
 
 ; first player
 firstPlayerScore uint32 0
@@ -96,10 +96,8 @@ game_asm:
 
 ; - called before window is shown
 onCreate proc
-	mov ballPos.x, 358
-	mov ballPos.y, 245
-	mov ballSpd.x, 0
-	mov ballSpd.y, 0
+	invoke vec_set, addr ballPos, BALL_START_FIRST
+	invoke vec_set,  addr ballSpd, 0, 0
 
 	invoke loadBitmap, offset fieldFileName
 	mov field, eax
@@ -129,6 +127,12 @@ onUpdate proc t:uint32
 	call updatePlayers
 	call updateBall
 
+	mov eax, t
+	add elapsedTime, eax
+	.IF (elapsedTime >= MATCH_TOTAL_TIME)
+		call exit
+	.ENDIF
+
 	;debugging
 	printf 13, 0 ;remove last line
 	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
@@ -136,6 +140,7 @@ onUpdate proc t:uint32
 	printf "s[%i,%i,%i,%i],", secStickSelected[3], secStickSelected[2], secStickSelected[1], secStickSelected[0]
 	printf "%ims,", t
 	printf "score(%02i-%02i),", firstPlayerScore, secPlayerScore
+	printf "elapsedTime=%i,", elapsedTime
 
 	ret
 onUpdate endp
@@ -211,7 +216,7 @@ getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
 	ret
 getBoundingBox endp
 
-hasCollided proc a:AABB, b:AABB, collisionDir:ptr IVec2
+hasCollided proc a:AABB, b:AABB, collisionDir:ptr vec
 	local randomX:int32
 	invoke randInRange, -1, 2
 	mov randomX, eax
@@ -222,19 +227,19 @@ hasCollided proc a:AABB, b:AABB, collisionDir:ptr IVec2
 	mov edx, a.y1
 
 	.IF     ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
-		invoke IVec2_set, collisionDir, +2, randomX
+		invoke vec_set, collisionDir, +2, randomX
 		mov eax, TRUE
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; left top
-		invoke IVec2_set, collisionDir, -2, randomX
+		invoke vec_set, collisionDir, -2, randomX
 		mov eax, TRUE
 	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; right top
-		invoke IVec2_set, collisionDir, +2, randomX
+		invoke vec_set, collisionDir, +2, randomX
 		mov eax, TRUE
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; left bottom
-		invoke IVec2_set, collisionDir, -2, randomX
+		invoke vec_set, collisionDir, -2, randomX
 		mov eax, TRUE
 	.ELSE
-		invoke IVec2_set, collisionDir, 0, 0
+		invoke vec_set, collisionDir, 0, 0
 		mov eax, FALSE
 	.ENDIF
 
@@ -512,7 +517,7 @@ updatePlayers proc
 updatePlayers endp
 
 updateBall proc
-	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:IVec2
+	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:vec
 	mov collided, FALSE
 	invoke getBoundingBox, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
 
@@ -521,23 +526,23 @@ updateBall proc
 		.IF (ballBB.x0 <= 11) ; left
 			call resetSticks
 			inc secPlayerScore
-			invoke IVec2_set, addr ballPos, BALL_START_SEC
-			invoke IVec2_set, addr ballSpd, 0, 0
+			invoke vec_set, addr ballPos, BALL_START_SEC
+			invoke vec_set, addr ballSpd, 0, 0
 			ret
 		.ELSEIF (ballBB.x1 >= 788) ; right
 			call resetSticks
 			inc firstPlayerScore
-			invoke IVec2_set, addr ballPos, BALL_START_FIRST
-			invoke IVec2_set, addr ballSpd, 0, 0
+			invoke vec_set, addr ballPos, BALL_START_FIRST
+			invoke vec_set, addr ballSpd, 0, 0
 			ret
 		.ENDIF
 	.ENDIF
 
 	; detect collision with walls
 	.IF (ballBB.y0 <= 9 || ballBB.y1 >= 490) ; up or down
-		invoke IVec2_negY, addr ballSpd
+		invoke vec_negY, addr ballSpd
 	.ELSEIF (ballBB.x0 <= 9 || ballBB.x1 >= 790) ; left or right
-		invoke IVec2_negX, addr ballSpd
+		invoke vec_negX, addr ballSpd
 	.ENDIF
 	
 	; detect collision with legs
@@ -565,11 +570,11 @@ updateBall proc
 	.ENDW
 
 	.IF (collided == TRUE)
-		invoke IVec2_scalarMul, BALL_SPEED_SCALE, addr colDir
-		invoke IVec2_cpy, addr ballSpd, addr colDir
+		invoke vec_smul, BALL_SPEED_SCALE, addr colDir
+		invoke vec_cpy, addr ballSpd, addr colDir
 	.ENDIF
 
-	invoke IVec2_add, addr ballPos, addr ballSpd
+	invoke vec_add, addr ballPos, addr ballSpd
 	;push mousePos.x
 	;pop ballPos.x
 	;push mousePos.y
