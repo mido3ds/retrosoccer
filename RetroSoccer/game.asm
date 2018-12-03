@@ -7,43 +7,6 @@ AABB STRUCT
 	y1 uint32 ?
 AABB ENDS
 
-.DATA
-fieldFileName db "assets/field.bmp",0
-spritesFileName db "assets/spritesheet.bmp",0
-field Bitmap ?
-sprites Bitmap ?
-bluePen Pen ?
-redPen Pen ?
-
-; ball
-ballPos IVec2 <>
-ballVel IVec2 <>
-
-; blue player
-blueStickSelected bool FALSE, FALSE, FALSE, FALSE
-blueStickY uint32 250, 250, 250, 250
-bluleStickX uint32 39, 168, 336, 534
-bluePlayerX uint32 11 dup(0)
-bluePlayerY uint32 11 dup(0)
-blueLeftLegX uint32 11 dup(0)
-blueLeftLegY uint32 11 dup(0)
-blueRightLegX uint32 11 dup(0)
-blueRightLegY uint32 11 dup(0)
-blueKick int32 0
-
-; red player
-redStickSelected bool FALSE, FALSE, FALSE, FALSE
-redStickY uint32 250, 250, 250, 250
-redStickX uint32 761, 632, 464, 266
-redPlayerX uint32 11 dup(0)
-redPlayerY uint32 11 dup(0)
-redLeftLegX uint32 11 dup(0)
-redLeftLegY uint32 11 dup(0)
-redRightLegX uint32 11 dup(0)
-redRightLegY uint32 11 dup(0)
-redKick int32 0
-redMovingUpDist int32 0
-
 .CONST
 playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
 		-74-SPR_PLAYER_HEIGHT/2, ;s1
@@ -62,6 +25,8 @@ stickLowerLimit uint32 25, 98, 194, 150
 
 RED_PLAYER_MOVING_DISTANCE equ 7
 KICK_DEFAULT_DIST equ 8
+PLAYER_COLOR_BLUE equ 0
+PLAYER_COLOR_RED equ 1
 
 ; sprite sheet info
 BKG_CLR equ 5a5754h
@@ -80,6 +45,47 @@ SPR_RED_LEG0 equ <19,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
 SPR_RED_LEG1 equ <0,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
 SPR_BALL equ <80,0,SPR_BALL_LEN,SPR_BALL_LEN,BKG_CLR>
 
+.DATA
+fieldFileName db "assets/field.bmp",0
+spritesFileName db "assets/spritesheet.bmp",0
+field Bitmap ?
+sprites Bitmap ?
+bluePen Pen ?
+redPen Pen ?
+
+; ball
+ballPos IVec2 <>
+ballSpd IVec2 <>
+
+; first player
+firstPlayerScore uint32 0
+firstPlayerColor uint32 PLAYER_COLOR_BLUE
+firstStickSelected bool FALSE, FALSE, FALSE, FALSE
+firstStickY uint32 250, 250, 250, 250
+firstStickX uint32 39, 168, 336, 534
+firstPlayerX uint32 11 dup(0)
+firstPlayerY uint32 11 dup(0)
+firstLeftLegX uint32 11 dup(0)
+firstLeftLegY uint32 11 dup(0)
+firstRightLegX uint32 11 dup(0)
+firstRightLegY uint32 11 dup(0)
+firstKick int32 0
+
+; second player
+secPlayerScore uint32 0
+secPlayerColor uint32 PLAYER_COLOR_RED
+secStickSelected bool FALSE, FALSE, FALSE, FALSE
+secStickY uint32 250, 250, 250, 250
+secStickX uint32 761, 632, 464, 266
+secPlayerX uint32 11 dup(0)
+secPlayerY uint32 11 dup(0)
+secLeftLegX uint32 11 dup(0)
+secLeftLegY uint32 11 dup(0)
+secRightLegX uint32 11 dup(0)
+secRightLegY uint32 11 dup(0)
+secKick int32 0
+secMovingUpDist int32 0
+
 .CODE
 game_asm:
 
@@ -95,7 +101,7 @@ onCreate proc
 
 	invoke createPen, 3, 0ff0000h ;blue
 	mov bluePen, eax
-	invoke createPen, 3, 0000ffh ;red
+	invoke createPen, 3, 0000ffh ;sec
 	mov redPen, eax
 	ret
 onCreate endp
@@ -119,8 +125,8 @@ onUpdate proc t:uint32
 	;debugging
 	printf 13, 0 ;remove last line
 	printf "mousePos {x=%03i, y=%03i}\\", mousePos.x, mousePos.y
-	printf "bs{%i,%i,%i,%i}\\", blueStickSelected[0], blueStickSelected[1], blueStickSelected[2], blueStickSelected[3]
-	printf "rs{%i,%i,%i,%i}\\", redStickSelected[0], redStickSelected[1], redStickSelected[2], redStickSelected[3]
+	printf "bs{%i,%i,%i,%i}\\", firstStickSelected[0], firstStickSelected[1], firstStickSelected[2], firstStickSelected[3]
+	printf "rs{%i,%i,%i,%i}\\", secStickSelected[0], secStickSelected[1], secStickSelected[2], secStickSelected[3]
 
 	ret
 onUpdate endp
@@ -138,18 +144,30 @@ onDraw endp
 drawBluePlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
-	invoke renderTBitmap, sprites, blueLeftLegX[ebx *4], blueLeftLegY[ebx *4], SPR_BLUE_LEG0;left leg
-	invoke renderTBitmap, sprites, blueRightLegX[ebx *4], blueRightLegY[ebx *4], SPR_BLUE_LEG0;right leg
-	invoke renderTBitmap, sprites, bluePlayerX[ebx *4], bluePlayerY[ebx *4], SPR_BLUE_PLAYER0 ;player
+	.IF (firstPlayerColor == PLAYER_COLOR_BLUE)
+		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_BLUE_LEG0;left leg
+		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_BLUE_LEG0;right leg
+		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_BLUE_PLAYER0 ;player
+	.ELSE
+		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_RED_LEG0;left leg
+		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_RED_LEG0;right leg
+		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_RED_PLAYER0 ;player
+	.ENDIF
 	ret
 drawBluePlayer endp
 
 drawRedPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
-	invoke renderTBitmap, sprites, redLeftLegX[ebx *4], redLeftLegY[ebx *4], SPR_RED_LEG1;left leg
-	invoke renderTBitmap, sprites, redRightLegX[ebx *4], redRightLegY[ebx *4], SPR_RED_LEG1;right leg
-	invoke renderTBitmap, sprites, redPlayerX[ebx *4], redPlayerY[ebx *4], SPR_RED_PLAYER1;player
+	.IF (secPlayerColor == PLAYER_COLOR_BLUE)
+		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_BLUE_LEG1;left leg
+		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_BLUE_LEG1;right leg
+		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_BLUE_PLAYER1;player
+	.ELSE
+		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_RED_LEG1;left leg
+		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_RED_LEG1;right leg
+		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_RED_PLAYER1;player
+	.ENDIF
 	ret
 drawRedPlayer endp
 
@@ -216,25 +234,25 @@ updateBlueLegsPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 
 	mov kick, 0
-	.IF (blueStickSelected[ebx] == TRUE)
-		push blueKick
+	.IF (firstStickSelected[ebx] == TRUE)
+		push firstKick
 		pop kick
 	.ENDIF
 
-	mov ecx, bluePlayerX[eax *4]
-	mov edx, bluePlayerY[eax *4]
+	mov ecx, firstPlayerX[eax *4]
+	mov edx, firstPlayerY[eax *4]
 
 	; left leg
 	add ecx, kick
 	add ecx, 2
 	add edx, 4
-	mov blueLeftLegX[eax *4], ecx
-	mov blueLeftLegY[eax *4], edx
+	mov firstLeftLegX[eax *4], ecx
+	mov firstLeftLegY[eax *4], edx
 
 	; right leg
 	add edx, SPR_PLAYER_HEIGHT/2+SPR_LEG_HEIGHT/2-9
-	mov blueRightLegX[eax *4], ecx
-	mov blueRightLegY[eax *4], edx
+	mov firstRightLegX[eax *4], ecx
+	mov firstRightLegY[eax *4], edx
 
 	ret
 updateBlueLegsPositions endp
@@ -248,25 +266,25 @@ updateRedLegsPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 
 	mov kick, 0
-	.IF (redStickSelected[ebx] == TRUE)
-		push redKick
+	.IF (secStickSelected[ebx] == TRUE)
+		push secKick
 		pop kick
 	.ENDIF
 
-	mov ecx, redPlayerX[eax *4]
-	mov edx, redPlayerY[eax *4]
+	mov ecx, secPlayerX[eax *4]
+	mov edx, secPlayerY[eax *4]
 
 	; right leg
 	add ecx, kick
 	sub ecx, 1
 	add edx, 4
-	mov redRightLegX[eax *4], ecx
-	mov redRightLegY[eax *4], edx
+	mov secRightLegX[eax *4], ecx
+	mov secRightLegY[eax *4], edx
 
 	; left leg
 	add edx, SPR_PLAYER_HEIGHT/2+SPR_LEG_HEIGHT/2-9
-	mov redLeftLegX[eax *4], ecx
-	mov redLeftLegY[eax *4], edx
+	mov secLeftLegX[eax *4], ecx
+	mov secLeftLegY[eax *4], edx
 
 	ret
 updateRedLegsPositions endp
@@ -276,13 +294,13 @@ updateBluePlayersPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 	
 	; calculate x,y
-	mov ecx, bluleStickX[ebx *4]
-	mov edx, blueStickY[ebx *4]
+	mov ecx, firstStickX[ebx *4]
+	mov edx, firstStickY[ebx *4]
 	add edx, playerOffsetY[eax *4]
 
 	; store x,y
-	mov bluePlayerX[eax *4], ecx
-	mov bluePlayerY[eax *4], edx
+	mov firstPlayerX[eax *4], ecx
+	mov firstPlayerY[eax *4], edx
 	ret
 updateBluePlayersPositions endp
 
@@ -291,13 +309,13 @@ updateRedPlayersPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 	
 	; calculate x,y
-	mov ecx, redStickX[ebx *4]
-	mov edx, redStickY[ebx *4]
+	mov ecx, secStickX[ebx *4]
+	mov edx, secStickY[ebx *4]
 	add edx, playerOffsetY[eax *4]
 
 	; store x,y
-	mov redPlayerX[eax *4], ecx
-	mov redPlayerY[eax *4], edx
+	mov secPlayerX[eax *4], ecx
+	mov secPlayerY[eax *4], edx
 	ret
 updateRedPlayersPositions endp
 
@@ -305,103 +323,103 @@ updateInput proc
 	local numOfSelected:uint32
 	mov numOfSelected, 0
 
-	; move sticks (blue)
+	; move sticks (first)
 	invoke isKeyPressed, VK_Q
-	mov blueStickSelected[0], al
-	.IF (blueStickSelected[0] == TRUE)
+	mov firstStickSelected[0], al
+	.IF (firstStickSelected[0] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
 	invoke isKeyPressed, VK_W
-	mov blueStickSelected[1], al
-	.IF (blueStickSelected[1] == TRUE)
+	mov firstStickSelected[1], al
+	.IF (firstStickSelected[1] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
 	invoke isKeyPressed, VK_E
-	mov blueStickSelected[2], al
-	.IF (blueStickSelected[2] == TRUE)
+	mov firstStickSelected[2], al
+	.IF (firstStickSelected[2] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
 			dec numOfSelected
-			mov blueStickSelected[2], FALSE
+			mov firstStickSelected[2], FALSE
 		.ENDIF
 	.ENDIF
 
 	invoke isKeyPressed, VK_R
-	mov blueStickSelected[3], al
-	.IF (blueStickSelected[3] == TRUE)
+	mov firstStickSelected[3], al
+	.IF (firstStickSelected[3] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
 			dec numOfSelected
-			mov blueStickSelected[3], FALSE
+			mov firstStickSelected[3], FALSE
 		.ENDIF
 	.ENDIF
 
-	; kick (blue)
-	mov blueKick, 0
+	; kick (first)
+	mov firstKick, 0
 	invoke isLeftMouseClicked
 	.IF (eax == TRUE)
-		mov blueKick, KICK_DEFAULT_DIST
+		mov firstKick, KICK_DEFAULT_DIST
 	.ENDIF
 	invoke isRightMouseClicked
 	.IF (eax == TRUE)
-		mov blueKick, -KICK_DEFAULT_DIST
+		mov firstKick, -KICK_DEFAULT_DIST
 	.ENDIF
 
-	; move sticks (red)
+	; move sticks (sec)
 	mov numOfSelected, 0
 	invoke isKeyPressed, VK_P
-	mov redStickSelected[0], al
-	.IF (redStickSelected[0] == TRUE)
+	mov secStickSelected[0], al
+	.IF (secStickSelected[0] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
 	invoke isKeyPressed, VK_O
-	mov redStickSelected[1], al
-	.IF (redStickSelected[1] == TRUE)
+	mov secStickSelected[1], al
+	.IF (secStickSelected[1] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
 	invoke isKeyPressed, VK_I
-	mov redStickSelected[2], al
-	.IF (redStickSelected[2] == TRUE)
+	mov secStickSelected[2], al
+	.IF (secStickSelected[2] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
 			dec numOfSelected
-			mov redStickSelected[2], FALSE
+			mov secStickSelected[2], FALSE
 		.ENDIF
 	.ENDIF
 
 	invoke isKeyPressed, VK_U
-	mov redStickSelected[3], al
-	.IF (redStickSelected[3] == TRUE)
+	mov secStickSelected[3], al
+	.IF (secStickSelected[3] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
 			dec numOfSelected
-			mov redStickSelected[3], FALSE
+			mov secStickSelected[3], FALSE
 		.ENDIF
 	.ENDIF
 
-	mov redMovingUpDist, 0
+	mov secMovingUpDist, 0
 	invoke isKeyPressed, VK_UP
 	.IF (eax == TRUE)
-		mov redMovingUpDist, -RED_PLAYER_MOVING_DISTANCE
+		mov secMovingUpDist, -RED_PLAYER_MOVING_DISTANCE
 	.ENDIF
 	invoke isKeyPressed, VK_DOWN
 	.IF (eax == TRUE)
-		mov redMovingUpDist, RED_PLAYER_MOVING_DISTANCE
+		mov secMovingUpDist, RED_PLAYER_MOVING_DISTANCE
 	.ENDIF
 
-	; kick (red)
-	mov redKick, 0
+	; kick (sec)
+	mov secKick, 0
 	invoke isKeyPressed, VK_RIGHT
 	.IF (eax == TRUE)
-		mov redKick, KICK_DEFAULT_DIST
+		mov secKick, KICK_DEFAULT_DIST
 	.ENDIF
 	invoke isKeyPressed, VK_LEFT
 	.IF (eax == TRUE)
-	   mov redKick, -KICK_DEFAULT_DIST
+	   mov secKick, -KICK_DEFAULT_DIST
 	.ENDIF
 
 	ret
@@ -412,46 +430,46 @@ updateSticks proc
 
 	mov i, 0
 	.WHILE (i < 4)
-		; blue stick
+		; first stick
 		mov eax, i
-		.IF (blueStickSelected[eax] == TRUE)
+		.IF (firstStickSelected[eax] == TRUE)
 			mov ebx, mousePos.y
-			mov blueStickY[eax *4], ebx
+			mov firstStickY[eax *4], ebx
 
 			; upper
 			.IF (ebx > stickUpperLimit[eax *4])
-				; blueStickY[i] = stickUpperLimit[i]
+				; firstStickY[i] = stickUpperLimit[i]
 				push stickUpperLimit[eax *4]
-				pop blueStickY[eax *4]
+				pop firstStickY[eax *4]
 			.ENDIF
 
 			; lower 
 			.IF (ebx < stickLowerLimit[eax *4])
-				; blueStickY[i] = stickLowerLimit[i]
+				; firstStickY[i] = stickLowerLimit[i]
 				push stickLowerLimit[eax *4]
-				pop blueStickY[eax *4]
+				pop firstStickY[eax *4]
 			.ENDIF
 		.ENDIF
 
-		; red stick
+		; sec stick
 		mov eax, i
-		.IF (redStickSelected[eax] == TRUE)
-			mov ebx, redMovingUpDist
-			add redStickY[eax *4], ebx
-			mov ebx, redStickY[eax *4]
+		.IF (secStickSelected[eax] == TRUE)
+			mov ebx, secMovingUpDist
+			add secStickY[eax *4], ebx
+			mov ebx, secStickY[eax *4]
 
 			; upper
 			.IF (ebx > stickUpperLimit[eax *4])
-				; redStickY[i] = stickUpperLimit[i]
+				; secStickY[i] = stickUpperLimit[i]
 				push stickUpperLimit[eax *4]
-				pop redStickY[eax *4]
+				pop secStickY[eax *4]
 			.ENDIF
 
 			; lower 
 			.IF (ebx < stickLowerLimit[eax *4])
-				; redStickY[i] = stickLowerLimit[i]
+				; secStickY[i] = stickLowerLimit[i]
 				push stickLowerLimit[eax *4]
-				pop redStickY[eax *4]
+				pop secStickY[eax *4]
 			.ENDIF
 		.ENDIF
 
@@ -492,18 +510,18 @@ updateBall proc
 	; detect collision
 	mov i, 0
 	.WHILE (i < 11) 
-		; blue legs
+		; first legs
 		mov edx, i
-		invoke getBoundingBox, blueLeftLegX[edx *4], blueLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
+		invoke getBoundingBox, firstLeftLegX[edx *4], firstLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 		
 		mov edx, i
 		invoke hasCollided, ballBB, legBB
 		mov collided, al
 		.BREAK .IF (eax == TRUE)
 
-		; red legs
+		; sec legs
 		mov edx, i
-		invoke getBoundingBox, redRightLegX[edx *4], redRightLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
+		invoke getBoundingBox, secRightLegX[edx *4], secRightLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 
 		mov edx, i
 		invoke hasCollided, ballBB, legBB
@@ -523,16 +541,24 @@ drawSticks proc
 
 	mov i, 0
 	.WHILE (i < 4)
-		invoke setPen, bluePen
+		.IF (firstPlayerColor == PLAYER_COLOR_BLUE)
+			invoke setPen, bluePen
+		.ELSE
+			invoke setPen, redPen
+		.ENDIF
 		mov edx, i
 		mov eax, SPR_PLAYER_WIDTH/2
-		add eax, bluleStickX[edx *4]
+		add eax, firstStickX[edx *4]
 		invoke drawLine, eax, 0, eax, WND_HEIGHT
 
-		invoke setPen, redPen
+		.IF (secPlayerColor == PLAYER_COLOR_BLUE)
+			invoke setPen, bluePen
+		.ELSE
+			invoke setPen, redPen
+		.ENDIF
 		mov edx, i
 		mov eax, SPR_PLAYER_WIDTH/2
-		add eax, redStickX[edx *4]
+		add eax, secStickX[edx *4]
 		invoke drawLine, eax, 0, eax, WND_HEIGHT
 
 		inc i
