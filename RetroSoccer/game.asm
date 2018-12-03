@@ -17,6 +17,9 @@ hasCollided proto x0:uint32, y0:uint32, x1:uint32, y1:uint32, x01:uint32, y01:ui
 updateLegsPositions proto playerNumber:uint32
 updatePlayersPositions proto playerNumber:uint32
 getInput proto
+updateSticks proto
+updatePlayers proto
+updateBall proto
 
 
 PLAYER_HEIGHT equ 31
@@ -123,136 +126,16 @@ onDestroy endp
 
 ; - game logic
 onUpdate proc t:double
-	local ballPos2:IVec2, x2:uint32, y2:uint32, col:bool, playerNumber:uint32
-	mov col, FALSE
-
 	invoke getInput
-
-	; update sticks
-	mov eax, 0
-	.WHILE (eax < 4)
-		.IF (stickSelected[eax] == TRUE)
-			mov ebx, mousePos.y
-			mov stickY[eax *4], ebx
-
-			; upper
-			.IF (ebx > stickUpperLimit[eax *4])
-				; stickY[i] = stickUpperLimit[i]
-				push stickUpperLimit[eax *4]
-				pop stickY[eax *4]
-			.ENDIF
-
-			; lower 
-			.IF (ebx < stickLowerLimit[eax *4])
-				; stickY[i] = stickLowerLimit[i]
-				push stickLowerLimit[eax *4]
-				pop stickY[eax *4]
-			.ENDIF
-		.ENDIF
-		inc eax
-	.ENDW
-
-	; update blue players
-	mov eax, 0
-	.WHILE (eax < 11)
-		mov playerNumber, eax
-
-		invoke updatePlayersPositions, playerNumber
-		invoke updateLegsPositions, playerNumber
-
-		mov eax, playerNumber
-		inc eax
-	.ENDW
-
-
-
-	;;;;;;;;;;;;;;;;;;;
-
-	; update red players
-	mov eax, 0
-	.WHILE (eax < 11)
-		mov playerNumber, eax
-
-		invoke updateredPlayersPositions, playerNumber
-		invoke updateredLegsPositions, playerNumber
-
-		mov eax, playerNumber
-		inc eax
-	.ENDW
-
-	; update ball
-	push mousePos.x
-	pop ballPos.x
-	push mousePos.y
-	pop ballPos.y
-	; collision;;;;;;;;;
-	invoke getBoundingBox, ballPos.x, ballPos.y, BALL_LENGTH, BALL_LENGTH, addr ballPos2.x, addr ballPos2.y
-	; left legs
-	mov edx, 0
-	.WHILE (edx < 11) 
-		push edx
-		invoke getBoundingBox, leftLegX[edx *4], leftLegY[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
-		pop edx
-
-		push edx
-		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
-							leftLegX[edx *4], leftLegY[edx *4], x2, y2
-		.IF (eax == TRUE)
-			mov col, TRUE
-			.BREAK
-		.ENDIF
-		pop edx
-		 
-		inc edx		
-	.ENDW
-
-	;;;;;;;;;;;;;;;
-	; collision;;;;;;;;;RED
-	
-	; left legs
-	mov edx, 0
-	.WHILE (edx < 11) 
-		push edx
-		invoke getBoundingBox, leftLegXred[edx *4], leftLegYred[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
-		pop edx
-
-		push edx
-		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
-							leftLegXred[edx *4], leftLegYred[edx *4], x2, y2
-		.IF (eax == TRUE)
-			mov col, TRUE
-			.BREAK
-		.ENDIF
-		pop edx
-		 
-		inc edx		
-	.ENDW
-	;;;;;;;;;;;;;;;;;;
-	; right legs
-	mov edx, 0
-	.WHILE (edx < 11) 
-		push edx
-		invoke getBoundingBox, rightLegXred[edx *4], rightLegYred[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
-		pop edx
-
-		push edx
-		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
-							rightLegXred[edx *4], rightLegYred[edx *4], x2, y2
-		.IF (eax == TRUE)
-			mov col, TRUE
-			.BREAK
-		.ENDIF
-		pop edx
-		 
-		inc edx		
-	.ENDW
+	invoke updateSticks
+	invoke updatePlayers
+	invoke updateBall
 
 	;debugging
 	printf 13, 0 ;remove last line
 	printf "mousePos {x=%i, y=%i}\\", mousePos.x, mousePos.y
 	printf "blueKick=%i\\", blueKick
 	printf "s0=%i, s1=%i, s2=%i, s3=%i\\", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
-	printf "collided=%i", col
 
 	ret
 onUpdate endp
@@ -365,13 +248,16 @@ getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, x1Ptr:ptr uint32, y1
 	ret
 getBoundingBox endp
 
-hasCollided proc x0:uint32, y0:uint32, x1:uint32, y1:uint32, x01:uint32, y01:uint32, x11:uint32, y11:uint32
+hasCollided proc x0:uint32, y0:uint32, x1:uint32, y1:uint32,\ 
+				x01:uint32, y01:uint32, x11:uint32, y11:uint32
+
 	mov eax, x01
 	mov ebx, y01
 	mov ecx, x11
 	mov edx, y11
 
-	.IF (((eax >= x0 && eax <=x1) && (ebx >= y0 && ebx <= y1)) || ((ecx >= x0 && ecx <= x1) && (edx >= y0 && edx <= y1)))
+	.IF (((eax >= x0 && eax <=x1) && (ebx >= y0 && ebx <= y1))\
+	 || ((ecx >= x0 && ecx <= x1) && (edx >= y0 && edx <= y1)))
 		mov eax, TRUE
 	.ELSE
 		mov eax, FALSE
@@ -420,7 +306,6 @@ updateredLegsPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 
 	
-
 	mov lvl, 0
 	.IF (stickSelected[ebx] == TRUE)
 		push redKick
@@ -536,4 +421,133 @@ getInput proc
 
 	ret
 getInput endp
+
+updateSticks proc
+	mov eax, 0
+	.WHILE (eax < 4)
+		.IF (stickSelected[eax] == TRUE)
+			mov ebx, mousePos.y
+			mov stickY[eax *4], ebx
+
+			; upper
+			.IF (ebx > stickUpperLimit[eax *4])
+				; stickY[i] = stickUpperLimit[i]
+				push stickUpperLimit[eax *4]
+				pop stickY[eax *4]
+			.ENDIF
+
+			; lower 
+			.IF (ebx < stickLowerLimit[eax *4])
+				; stickY[i] = stickLowerLimit[i]
+				push stickLowerLimit[eax *4]
+				pop stickY[eax *4]
+			.ENDIF
+		.ENDIF
+		inc eax
+	.ENDW
+
+	ret
+updateSticks endp
+
+updatePlayers proc
+	local playerNumber:uint32
+
+	; update blue players
+	mov eax, 0
+	.WHILE (eax < 11)
+		mov playerNumber, eax
+
+		invoke updatePlayersPositions, playerNumber
+		invoke updateLegsPositions, playerNumber
+
+		mov eax, playerNumber
+		inc eax
+	.ENDW
+
+	; update red players
+	mov eax, 0
+	.WHILE (eax < 11)
+		mov playerNumber, eax
+
+		invoke updateredPlayersPositions, playerNumber
+		invoke updateredLegsPositions, playerNumber
+
+		mov eax, playerNumber
+		inc eax
+	.ENDW
+
+	ret
+updatePlayers endp
+
+updateBall proc
+	local ballPos2:IVec2, x2:uint32, y2:uint32, col:bool
+	mov col, FALSE
+
+	push mousePos.x
+	pop ballPos.x
+	push mousePos.y
+	pop ballPos.y
+
+	invoke getBoundingBox, ballPos.x, ballPos.y, BALL_LENGTH, BALL_LENGTH, addr ballPos2.x, addr ballPos2.y
+
+	; collision with blue
+	; left legs
+	mov edx, 0
+	.WHILE (edx < 11) 
+		; left blue legs
+		push edx
+		invoke getBoundingBox, leftLegX[edx *4], leftLegY[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
+		pop edx
+
+		push edx
+		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
+							leftLegX[edx *4], leftLegY[edx *4], x2, y2
+		mov col, al
+		.BREAK .IF (eax == TRUE)
+		pop edx
+		
+		; right blue legs
+		push edx
+		invoke getBoundingBox, rightLegX[edx *4], rightLegY[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
+		pop edx
+
+		push edx
+		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
+							rightLegX[edx *4], rightLegY[edx *4], x2, y2
+		mov col, al
+		.BREAK .IF (eax == TRUE)
+		pop edx
+
+		; left red legs
+		push edx
+		invoke getBoundingBox, leftLegXred[edx *4], leftLegYred[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
+		pop edx
+
+		push edx
+		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
+							leftLegXred[edx *4], leftLegYred[edx *4], x2, y2
+		mov col, al
+		.BREAK .IF (eax == TRUE)
+		pop edx
+
+		; right red legs
+		push edx
+		invoke getBoundingBox, rightLegXred[edx *4], rightLegYred[edx *4], LEG_WIDTH, LEG_HEIGHT, addr x2, addr y2
+		pop edx
+
+		push edx
+		invoke hasCollided, ballPos.x, ballPos.y, ballPos2.x, ballPos2.y,\	
+							rightLegXred[edx *4], rightLegYred[edx *4], x2, y2
+		mov col, al
+		.BREAK .IF (eax == TRUE)
+		pop edx
+		 
+		inc edx		
+	.ENDW
+
+	printf "collided=%i", col
+
+	ret
+updateBall endp
+
 end game_asm
