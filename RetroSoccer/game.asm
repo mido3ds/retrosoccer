@@ -16,6 +16,7 @@ getBoundingBox proto x:uint32, y:uint32, w:uint32, h:uint32, x1:ptr uint32, y1:p
 hasCollided proto x0:uint32, y0:uint32, x1:uint32, y1:uint32, x01:uint32, y01:uint32, x11:uint32, y11:uint32
 updateLegsPositions proto playerNumber:uint32
 updatePlayersPositions proto playerNumber:uint32
+getInput proto
 
 
 PLAYER_HEIGHT equ 31
@@ -33,16 +34,12 @@ bluePen Pen ?
 redPen Pen ?
 
 ballPos IVec2 <>
-lastMousePos IVec2 <>
-mouseLvl int32 0
-mouselvlred int32 0
+
+blueKick int32 0
+redKick int32 0
 
 
 stickXred uint32 761 , 632, 464, 266
-
-
-
-
 
 
 stickY uint32 250, 250, 250, 250
@@ -100,10 +97,6 @@ game_asm:
 
 ; - called before window is shown
 onCreate proc
-	mov lastMousePos.x, 0
-	mov lastMousePos.y, 0
-	mov mouseLvl, 0
-	mov mouselvlred,0
 	mov ballPos.x, 356
 	mov ballPos.y, 245
 
@@ -130,99 +123,12 @@ onDestroy endp
 
 ; - game logic
 onUpdate proc t:double
-	local numOfSelected:uint32, ballPos2:IVec2, x2:uint32, y2:uint32, col:bool
-	mov numOfSelected, 0
+	local ballPos2:IVec2, x2:uint32, y2:uint32, col:bool, playerNumber:uint32
 	mov col, FALSE
 
-	push mousePos.x
-	pop ballPos.x
-	push mousePos.y
-	pop ballPos.y
+	invoke getInput
 
-	; compute mouseLvl
-	; mouseLvl = mousePos.x - lastMousePos.x
-	mov eax, mousePos.x
-	sub eax, lastMousePos.x
-	mov mouseLvl, eax
-
-	cmp mouseLvl, 0
-	jl l0
-		.IF (mouseLvl < 2)
-			mov mouseLvl, 0
-		.ELSEIF (mouseLvl < 10)
-			mov mouseLvl, 10
-		.ELSE
-			mov mouseLvl, 15
-		.ENDIF
-	jmp l3
-	l0:
-
-	cmp mouseLvl, -2
-	jl l1
-		mov mouseLvl, 0
-	jmp l3
-	l1:
-
-	cmp mouseLvl, -10
-	jl l2
-		mov mouseLvl, -10
-	l2:
-		mov mouseLvl, -15
-	l3:
-
-	push mousePos.x
-	push mousePos.y
-	pop lastMousePos.y
-	pop lastMousePos.x
-	;;;;;;;;;;;;;;;
-
-	mov mouselvlred, 0
-	invoke isKeyPressed, VK_RIGHT
-	.IF (eax == TRUE)
-		mov mouselvlred, 10
-	.ENDIF
-	invoke isKeyPressed, VK_LEFT
-	.IF (eax == TRUE)
-	   mov mouselvlred, -10
-	.ENDIF
-
-	;;;;;;;;;;;;;;;
-
-
-	; get selected keys
-	invoke isKeyPressed, VK_Q
-	mov stickSelected[0], al
-	.IF (stickSelected[0] == TRUE)
-		inc numOfSelected
-	.ENDIF
-
-	invoke isKeyPressed, VK_W
-	mov stickSelected[1], al
-	.IF (stickSelected[1] == TRUE)
-		inc numOfSelected
-	.ENDIF
-
-	invoke isKeyPressed, VK_E
-	mov stickSelected[2], al
-	.IF (stickSelected[2] == TRUE)
-		inc numOfSelected
-		.IF (numOfSelected > 2)
-			dec numOfSelected
-			mov stickSelected[2], FALSE
-		.ENDIF
-	.ENDIF
-
-	invoke isKeyPressed, VK_R
-	mov stickSelected[3], al
-	.IF (stickSelected[3] == TRUE)
-		inc numOfSelected
-		.IF (numOfSelected > 2)
-			dec numOfSelected
-			mov stickSelected[3], FALSE
-		.ENDIF
-	.ENDIF
-
-	; mov sticks on y
+	; update sticks
 	mov eax, 0
 	.WHILE (eax < 4)
 		.IF (stickSelected[eax] == TRUE)
@@ -246,6 +152,39 @@ onUpdate proc t:double
 		inc eax
 	.ENDW
 
+	; update blue players
+	mov eax, 0
+	.WHILE (eax < 11)
+		mov playerNumber, eax
+
+		invoke updatePlayersPositions, playerNumber
+		invoke updateLegsPositions, playerNumber
+
+		mov eax, playerNumber
+		inc eax
+	.ENDW
+
+
+
+	;;;;;;;;;;;;;;;;;;;
+
+	; update red players
+	mov eax, 0
+	.WHILE (eax < 11)
+		mov playerNumber, eax
+
+		invoke updateredPlayersPositions, playerNumber
+		invoke updateredLegsPositions, playerNumber
+
+		mov eax, playerNumber
+		inc eax
+	.ENDW
+
+	; update ball
+	push mousePos.x
+	pop ballPos.x
+	push mousePos.y
+	pop ballPos.y
 	; collision;;;;;;;;;
 	invoke getBoundingBox, ballPos.x, ballPos.y, BALL_LENGTH, BALL_LENGTH, addr ballPos2.x, addr ballPos2.y
 	; left legs
@@ -308,11 +247,10 @@ onUpdate proc t:double
 		inc edx		
 	.ENDW
 
-
 	;debugging
 	printf 13, 0 ;remove last line
 	printf "mousePos {x=%i, y=%i}\\", mousePos.x, mousePos.y
-	printf "mouseLvl=%i\\", mouseLvl
+	printf "blueKick=%i\\", blueKick
 	printf "s0=%i, s1=%i, s2=%i, s3=%i\\", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
 	printf "collided=%i", col
 
@@ -340,20 +278,6 @@ onDraw proc t:double
 	.ENDW
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;
 	; draw red sticks
 	invoke setPen, redPen
@@ -370,15 +294,12 @@ onDraw proc t:double
 	.ENDW
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	; draw blue players
+	; draw players
 	mov eax, 0
 	.WHILE (eax < 11)
 		mov playerNumber, eax
-
-		invoke updatePlayersPositions, playerNumber
-		invoke updateLegsPositions, playerNumber
 		invoke drawBluePlayer, playerNumber
-
+		invoke drawRedPlayer, playerNumber
 		mov eax, playerNumber
 		inc eax
 	.ENDW
@@ -387,31 +308,7 @@ onDraw proc t:double
 
 	;;;;;;;;;;;;;;;;;;;
 
-	; draw red players
-	mov eax, 0
-	.WHILE (eax < 11)
-		mov playerNumber, eax
-
-		invoke updateredPlayersPositions, playerNumber
-		invoke updateredLegsPositions, playerNumber
-		invoke drawRedPlayer, playerNumber
-
-		mov eax, playerNumber
-		inc eax
-	.ENDW
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
-
-
-
-
-
-
 
 	ret
 onDraw endp
@@ -492,7 +389,7 @@ updateLegsPositions proc playerNumber:uint32
 
 	mov lvl, 0
 	.IF (stickSelected[ebx] == TRUE)
-		push mouseLvl
+		push blueKick
 		pop lvl
 	.ENDIF
 
@@ -526,7 +423,7 @@ updateredLegsPositions proc playerNumber:uint32
 
 	mov lvl, 0
 	.IF (stickSelected[ebx] == TRUE)
-		push mouselvlred
+		push redKick
 		pop lvl
 	.ENDIF
 
@@ -579,4 +476,64 @@ updateredPlayersPositions proc playerNumber:uint32
 	ret
 updateredPlayersPositions endp
 ;;;;;;;;;;;;;;;;;
+
+getInput proc
+	local numOfSelected:uint32
+	mov numOfSelected, 0
+
+	; get input
+	invoke isKeyPressed, VK_Q
+	mov stickSelected[0], al
+	.IF (stickSelected[0] == TRUE)
+		inc numOfSelected
+	.ENDIF
+
+	invoke isKeyPressed, VK_W
+	mov stickSelected[1], al
+	.IF (stickSelected[1] == TRUE)
+		inc numOfSelected
+	.ENDIF
+
+	invoke isKeyPressed, VK_E
+	mov stickSelected[2], al
+	.IF (stickSelected[2] == TRUE)
+		inc numOfSelected
+		.IF (numOfSelected > 2)
+			dec numOfSelected
+			mov stickSelected[2], FALSE
+		.ENDIF
+	.ENDIF
+
+	invoke isKeyPressed, VK_R
+	mov stickSelected[3], al
+	.IF (stickSelected[3] == TRUE)
+		inc numOfSelected
+		.IF (numOfSelected > 2)
+			dec numOfSelected
+			mov stickSelected[3], FALSE
+		.ENDIF
+	.ENDIF
+
+	mov blueKick, 0
+	invoke isLeftMouseClicked
+	.IF (eax == TRUE)
+		mov blueKick, 10
+	.ENDIF
+	invoke isRightMouseClicked
+	.IF (eax == TRUE)
+		mov blueKick, -10
+	.ENDIF
+
+	mov redKick, 0
+	invoke isKeyPressed, VK_RIGHT
+	.IF (eax == TRUE)
+		mov redKick, 10
+	.ENDIF
+	invoke isKeyPressed, VK_LEFT
+	.IF (eax == TRUE)
+	   mov redKick, -10
+	.ENDIF
+
+	ret
+getInput endp
 end game_asm
