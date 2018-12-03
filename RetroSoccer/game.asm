@@ -127,9 +127,9 @@ onUpdate proc t:uint32
 
 	;debugging
 	printf 13, 0 ;remove last line
-	printf "mousePos {x=%03i, y=%03i}\\", mousePos.x, mousePos.y
-	printf "bs{%i,%i,%i,%i}\\", firstStickSelected[0], firstStickSelected[1], firstStickSelected[2], firstStickSelected[3]
-	printf "rs{%i,%i,%i,%i}\\", secStickSelected[0], secStickSelected[1], secStickSelected[2], secStickSelected[3]
+	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
+	printf "f[%i,%i,%i,%i],", firstStickSelected[0], firstStickSelected[1], firstStickSelected[2], firstStickSelected[3]
+	printf "s[%i,%i,%i,%i],", secStickSelected[3], secStickSelected[2], secStickSelected[1], secStickSelected[0]
 
 	ret
 onUpdate endp
@@ -206,36 +206,32 @@ getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
 getBoundingBox endp
 
 hasCollided proc a:AABB, b:AABB, collisionDir:ptr IVec2
-	invoke randBool
-	mov esi, eax
+	local randomX:int32
+	invoke randInRange, -1, 2
+	mov randomX, eax
 
 	mov eax, a.x0
 	mov ebx, a.y0
 	mov ecx, a.x1
 	mov edx, a.y1
 
-	.IF ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
-		neg esi
-		invoke IVec2_set, collisionDir, 2, esi
+	.IF     ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
+		invoke IVec2_set, collisionDir, +2, randomX
 		mov eax, TRUE
-		ret
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; left top
-		invoke IVec2_set, collisionDir, -2, esi
+		invoke IVec2_set, collisionDir, -2, randomX
 		mov eax, TRUE
-		ret
 	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; right top
-		invoke IVec2_set, collisionDir, 2, esi
+		invoke IVec2_set, collisionDir, +2, randomX
 		mov eax, TRUE
-		ret
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; left bottom
-		neg si
-		invoke IVec2_set, collisionDir, -2, esi
+		invoke IVec2_set, collisionDir, -2, randomX
 		mov eax, TRUE
-		ret
+	.ELSE
+		invoke IVec2_set, collisionDir, 0, 0
+		mov eax, FALSE
 	.ENDIF
 
-	invoke IVec2_set, collisionDir, 0, 0
-	mov eax, FALSE
 	ret
 hasCollided endp
 
@@ -552,7 +548,7 @@ updateBall proc
 
 	invoke IVec2_add, addr ballPos, addr ballSpd
 
-	printf "colDir={%i,%i}\\ballSpd={%i,%i}", collided, colDir.x, colDir.y, ballSpd.x, ballSpd.y
+	printf "colDir(%02i,%02i),ballSpd(%02i,%02i)", colDir.x, colDir.y, ballSpd.x, ballSpd.y
 
 	ret
 updateBall endp

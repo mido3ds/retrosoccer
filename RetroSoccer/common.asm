@@ -615,8 +615,8 @@ IVec2_neg proc v:ptr IVec2
 	ret
 IVec2_neg endp
 
-RAND_A equ 69069
-RAND_B equ 69069 ;TODO make them different
+RAND_A equ 1103515245
+RAND_B equ 12345
 rand proc
 	mov eax, __randSeed
 	mov ebx, RAND_A
@@ -632,6 +632,7 @@ randInRange proc a:uint32, b:uint32
 	sub ebx, a
 	mov edx, 0
 	div ebx
+	mov eax, edx
 	add eax, a
 	ret
 randInRange endp
