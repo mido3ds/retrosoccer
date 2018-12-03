@@ -139,10 +139,6 @@ onUpdate proc t:double
 	push mousePos.y
 	pop ballPos.y
 
-	;debugging
-	printf 13, 0 ;remove last line
-	printf "mousePos {x=%i, y=%i}\\", mousePos.x, mousePos.y
-
 	; compute mouseLvl
 	; mouseLvl = mousePos.x - lastMousePos.x
 	mov eax, mousePos.x
@@ -178,41 +174,36 @@ onUpdate proc t:double
 	push mousePos.y
 	pop lastMousePos.y
 	pop lastMousePos.x
-
-	printf "mouseLvl=%i\\", mouseLvl
 	;;;;;;;;;;;;;;;
 
 	mov mouselvlred, 0
-invoke isKeyPressed, VK_RIGHT
-.IF (eax == TRUE)
-    mov mouselvlred, 10
-.ENDIF
-invoke isKeyPressed, VK_LEFT
-.IF (eax == TRUE)
-   mov mouselvlred, -10
-.ENDIF
+	invoke isKeyPressed, VK_RIGHT
+	.IF (eax == TRUE)
+		mov mouselvlred, 10
+	.ENDIF
+	invoke isKeyPressed, VK_LEFT
+	.IF (eax == TRUE)
+	   mov mouselvlred, -10
+	.ENDIF
 
-;;;;;;;;;;;;;;;
+	;;;;;;;;;;;;;;;
 
 
 	; get selected keys
 	invoke isKeyPressed, VK_Q
 	mov stickSelected[0], al
-	printf "Q=%i, ", eax
 	.IF (stickSelected[0] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
 	invoke isKeyPressed, VK_W
 	mov stickSelected[1], al
-	printf "W=%i, ", eax
 	.IF (stickSelected[1] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
 	invoke isKeyPressed, VK_E
 	mov stickSelected[2], al
-	printf "E=%i, ", eax
 	.IF (stickSelected[2] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
@@ -223,7 +214,6 @@ invoke isKeyPressed, VK_LEFT
 
 	invoke isKeyPressed, VK_R
 	mov stickSelected[3], al
-	printf "R=%i", eax
 	.IF (stickSelected[3] == TRUE)
 		inc numOfSelected
 		.IF (numOfSelected > 2)
@@ -231,8 +221,6 @@ invoke isKeyPressed, VK_LEFT
 			mov stickSelected[3], FALSE
 		.ENDIF
 	.ENDIF
-
-	printf "\\s0=%i, s1=%i, s2=%i, s3=%i", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
 
 	; mov sticks on y
 	mov eax, 0
@@ -320,7 +308,13 @@ invoke isKeyPressed, VK_LEFT
 		inc edx		
 	.ENDW
 
-	printfln "\\collided=%i", col
+
+	;debugging
+	printf 13, 0 ;remove last line
+	printf "mousePos {x=%i, y=%i}\\", mousePos.x, mousePos.y
+	printf "mouseLvl=%i\\", mouseLvl
+	printf "s0=%i, s1=%i, s2=%i, s3=%i\\", stickSelected[0], stickSelected[1], stickSelected[2], stickSelected[3]
+	printf "collided=%i", col
 
 	ret
 onUpdate endp
