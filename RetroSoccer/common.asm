@@ -13,11 +13,12 @@ include common.inc
 getTitleHeight proto
 prepareBuffers proto
 swapBuffers proto
+timerCallback proto	hwnd:HWND, msg:UINT, idTimer:UINT, dwTime:DWORD	
 
 onCreate proto
 onDestroy proto
-onUpdate proto t:double
-onDraw proto t:double
+onUpdate proto t:uint32
+onDraw proto
 
 ; public
 .DATA?
@@ -26,10 +27,8 @@ public mousePos
 
 ; private
 .CONST
+UPDATE_TIME_MILIS equ 1000/100
 UPDATE_TIMER_ID equ 1
-UPDATE_TIME_MILIS equ 10
-DRAW_TIME_MILIS equ 10
-UPDATE_TIME_SEC double 0.01
 CONIN char "CONIN$",0
 CONOUT char "CONOUT$",0
 MAIN_CLASS_NAME char "MainWindowClass",0
@@ -43,6 +42,7 @@ __stdin uint32 ?
 __mainWnd HWND ?
 __totalHeight uint32 ?
 __hdcTemp HDC ?
+__lastTickCount uint32 ?
 
 .CODE
 start proc
@@ -98,17 +98,15 @@ start proc
     invoke UpdateWindow, __mainWnd 
 	invoke GetFocus
 
-	invoke SetTimer, __mainWnd, UPDATE_TIMER_ID, UPDATE_TIME_MILIS, NULL
+	invoke GetTickCount
+	mov __lastTickCount, eax
+	invoke SetTimer, __mainWnd, UPDATE_TIMER_ID, UPDATE_TIME_MILIS, offset timerCallback
 
 	.WHILE TRUE      
 		invoke GetMessage, addr msg, NULL, 0, 0 
 		.BREAK .IF (!eax) 
 		invoke TranslateMessage, addr msg 
 		invoke DispatchMessage, addr msg
-
-		invoke prepareBuffers
-		invoke onDraw, UPDATE_TIME_SEC;TODO
-		invoke swapBuffers
 	.ENDW	   
 
 	invoke ExitProcess, msg.wParam                      
@@ -121,9 +119,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .ELSEIF uMsg==WM_DESTROY   
 		invoke KillTimer, __mainWnd, UPDATE_TIMER_ID
 		invoke onDestroy                        
-        invoke PostQuitMessage, NULL  
-	.ELSEIF uMsg==WM_TIMER
-		invoke onUpdate, UPDATE_TIME_SEC
+        invoke PostQuitMessage, NULL  		
 	.ELSEIF uMsg==WM_ERASEBKGND 
 		mov eax, 1
 		ret
@@ -140,7 +136,12 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 WndProc endp
 
 timerCallback proc	hwnd:HWND, msg:UINT, idTimer:UINT, dwTime:DWORD	
-
+	mov eax, dwTime
+	sub eax, __lastTickCount
+	invoke onUpdate, eax
+	invoke prepareBuffers
+	invoke onDraw
+	invoke swapBuffers
 	ret
 timerCallback endp
 

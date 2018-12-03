@@ -9,7 +9,7 @@ AABB ENDS
 
 .DATA
 fieldFileName db "assets/field.bmp",0
-spritesFileName db "assets/sprites2.bmp",0
+spritesFileName db "assets/spritesheet.bmp",0
 field Bitmap ?
 sprites Bitmap ?
 bluePen Pen ?
@@ -45,27 +45,40 @@ redKick int32 0
 redMovingUpDist int32 0
 
 .CONST
-playerOffsetY int32 0-PLAYER_HEIGHT/2, ;s0
-		-74-PLAYER_HEIGHT/2, ;s1
-		+74-PLAYER_HEIGHT/2, 
-		-2*84-PLAYER_HEIGHT/2, ;s2
-		-84-PLAYER_HEIGHT/2, 
-		-PLAYER_HEIGHT/2, 
-		+84-PLAYER_HEIGHT/2, 
-		+2*84-PLAYER_HEIGHT/2,
-		-125-PLAYER_HEIGHT/2, ;s3
-		-PLAYER_HEIGHT/2, 
-		+125-PLAYER_HEIGHT/2
+playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
+		-74-SPR_PLAYER_HEIGHT/2, ;s1
+		+74-SPR_PLAYER_HEIGHT/2, 
+		-2*84-SPR_PLAYER_HEIGHT/2, ;s2
+		-84-SPR_PLAYER_HEIGHT/2, 
+		-SPR_PLAYER_HEIGHT/2, 
+		+84-SPR_PLAYER_HEIGHT/2, 
+		+2*84-SPR_PLAYER_HEIGHT/2,
+		-125-SPR_PLAYER_HEIGHT/2, ;s3
+		-SPR_PLAYER_HEIGHT/2, 
+		+125-SPR_PLAYER_HEIGHT/2
 playerStick uint32 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
 stickUpperLimit uint32 472, 400, 306, 348
 stickLowerLimit uint32 25, 98, 194, 150
 
-PLAYER_HEIGHT equ 31
-PLAYER_WIDTH equ 21
-BALL_LENGTH equ 18
-LEG_WIDTH equ 19
-LEG_HEIGHT equ 13
-RED_PLAYER_MOVING_DISTANCE equ 5
+RED_PLAYER_MOVING_DISTANCE equ 7
+KICK_DEFAULT_DIST equ 8
+
+; sprite sheet info
+BKG_CLR equ 5a5754h
+SPR_PLAYER_HEIGHT equ 31
+SPR_PLAYER_WIDTH equ 21
+SPR_BALL_LEN equ 18
+SPR_LEG_WIDTH equ 19
+SPR_LEG_HEIGHT equ 13
+SPR_BLUE_PLAYER0 equ <59,0,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
+SPR_BLUE_PLAYER1 equ <38,0,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
+SPR_RED_PLAYER0 equ <59,31,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
+SPR_RED_PLAYER1 equ <38,31,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
+SPR_BLUE_LEG0 equ <19,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
+SPR_BLUE_LEG1 equ <0,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
+SPR_RED_LEG0 equ <19,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
+SPR_RED_LEG1 equ <0,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
+SPR_BALL equ <80,0,SPR_BALL_LEN,SPR_BALL_LEN,BKG_CLR>
 
 .CODE
 game_asm:
@@ -84,8 +97,6 @@ onCreate proc
 	mov bluePen, eax
 	invoke createPen, 3, 0000ffh ;red
 	mov redPen, eax
-
-	;invoke hideMouse
 	ret
 onCreate endp
 
@@ -99,7 +110,7 @@ onDestroy proc
 onDestroy endp
 
 ; - game logic
-onUpdate proc t:double
+onUpdate proc t:uint32
 	call updateInput
 	call updateSticks
 	call updatePlayers
@@ -115,7 +126,7 @@ onUpdate proc t:double
 onUpdate endp
 
 ; - game rendering
-onDraw proc t:double
+onDraw proc
 	call drawField
 	call drawBall
 	call drawSticks
@@ -124,29 +135,26 @@ onDraw proc t:double
 	ret
 onDraw endp
 
-
-BKG_CLR equ 5a5754h
-
 drawBluePlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
-	invoke renderTBitmap, sprites, blueLeftLegX[ebx *4], blueLeftLegY[ebx *4], 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;left leg
-	invoke renderTBitmap, sprites, blueRightLegX[ebx *4], blueRightLegY[ebx *4], 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;right leg
-	invoke renderTBitmap, sprites, bluePlayerX[ebx *4], bluePlayerY[ebx *4], 137, 31, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
+	invoke renderTBitmap, sprites, blueLeftLegX[ebx *4], blueLeftLegY[ebx *4], SPR_BLUE_LEG0;left leg
+	invoke renderTBitmap, sprites, blueRightLegX[ebx *4], blueRightLegY[ebx *4], SPR_BLUE_LEG0;right leg
+	invoke renderTBitmap, sprites, bluePlayerX[ebx *4], bluePlayerY[ebx *4], SPR_BLUE_PLAYER0 ;player
 	ret
 drawBluePlayer endp
 
 drawRedPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
-	invoke renderTBitmap, sprites, redLeftLegX[ebx *4], redLeftLegY[ebx *4], 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;left leg
-	invoke renderTBitmap, sprites, redRightLegX[ebx *4], redRightLegY[ebx *4], 135, 217, LEG_WIDTH, LEG_HEIGHT, BKG_CLR ;right leg
-	invoke renderTBitmap, sprites, redPlayerX[ebx *4], redPlayerY[ebx *4], 63, 155, PLAYER_WIDTH, PLAYER_HEIGHT, BKG_CLR ;player
+	invoke renderTBitmap, sprites, redLeftLegX[ebx *4], redLeftLegY[ebx *4], SPR_RED_LEG1;left leg
+	invoke renderTBitmap, sprites, redRightLegX[ebx *4], redRightLegY[ebx *4], SPR_RED_LEG1;right leg
+	invoke renderTBitmap, sprites, redPlayerX[ebx *4], redPlayerY[ebx *4], SPR_RED_PLAYER1;player
 	ret
 drawRedPlayer endp
 
 drawBall proc
-	invoke renderTBitmap, sprites, ballPos.x, ballPos.y, 198, 18, BALL_LENGTH, BALL_LENGTH, BKG_CLR
+	invoke renderTBitmap, sprites, ballPos.x, ballPos.y, SPR_BALL
 	ret
 drawBall endp
 
@@ -224,7 +232,7 @@ updateBlueLegsPositions proc playerNumber:uint32
 	mov blueLeftLegY[eax *4], edx
 
 	; right leg
-	add edx, PLAYER_HEIGHT/2+LEG_HEIGHT/2-9
+	add edx, SPR_PLAYER_HEIGHT/2+SPR_LEG_HEIGHT/2-9
 	mov blueRightLegX[eax *4], ecx
 	mov blueRightLegY[eax *4], edx
 
@@ -250,13 +258,13 @@ updateRedLegsPositions proc playerNumber:uint32
 
 	; right leg
 	add ecx, kick
-	add ecx, 2
+	sub ecx, 1
 	add edx, 4
 	mov redRightLegX[eax *4], ecx
 	mov redRightLegY[eax *4], edx
 
 	; left leg
-	add edx, PLAYER_HEIGHT/2+LEG_HEIGHT/2-9
+	add edx, SPR_PLAYER_HEIGHT/2+SPR_LEG_HEIGHT/2-9
 	mov redLeftLegX[eax *4], ecx
 	mov redLeftLegY[eax *4], edx
 
@@ -334,28 +342,28 @@ updateInput proc
 	mov blueKick, 0
 	invoke isLeftMouseClicked
 	.IF (eax == TRUE)
-		mov blueKick, 10
+		mov blueKick, KICK_DEFAULT_DIST
 	.ENDIF
 	invoke isRightMouseClicked
 	.IF (eax == TRUE)
-		mov blueKick, -10
+		mov blueKick, -KICK_DEFAULT_DIST
 	.ENDIF
 
 	; move sticks (red)
 	mov numOfSelected, 0
-	invoke isKeyPressed, VK_U
+	invoke isKeyPressed, VK_P
 	mov redStickSelected[0], al
 	.IF (redStickSelected[0] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
-	invoke isKeyPressed, VK_I
+	invoke isKeyPressed, VK_O
 	mov redStickSelected[1], al
 	.IF (redStickSelected[1] == TRUE)
 		inc numOfSelected
 	.ENDIF
 
-	invoke isKeyPressed, VK_O
+	invoke isKeyPressed, VK_I
 	mov redStickSelected[2], al
 	.IF (redStickSelected[2] == TRUE)
 		inc numOfSelected
@@ -365,7 +373,7 @@ updateInput proc
 		.ENDIF
 	.ENDIF
 
-	invoke isKeyPressed, VK_P
+	invoke isKeyPressed, VK_U
 	mov redStickSelected[3], al
 	.IF (redStickSelected[3] == TRUE)
 		inc numOfSelected
@@ -389,11 +397,11 @@ updateInput proc
 	mov redKick, 0
 	invoke isKeyPressed, VK_RIGHT
 	.IF (eax == TRUE)
-		mov redKick, 10
+		mov redKick, KICK_DEFAULT_DIST
 	.ENDIF
 	invoke isKeyPressed, VK_LEFT
 	.IF (eax == TRUE)
-	   mov redKick, -10
+	   mov redKick, -KICK_DEFAULT_DIST
 	.ENDIF
 
 	ret
@@ -479,15 +487,14 @@ updateBall proc
 	push mousePos.y
 	pop ballPos.y
 
-	invoke getBoundingBox, ballPos.x, ballPos.y, BALL_LENGTH, BALL_LENGTH, addr ballBB
+	invoke getBoundingBox, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
 	
-	; collision with blue
-	; left legs
+	; detect collision
 	mov i, 0
 	.WHILE (i < 11) 
 		; blue legs
 		mov edx, i
-		invoke getBoundingBox, blueLeftLegX[edx *4], blueLeftLegY[edx *4], LEG_WIDTH, LEG_HEIGHT*2, addr legBB
+		invoke getBoundingBox, blueLeftLegX[edx *4], blueLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 		
 		mov edx, i
 		invoke hasCollided, ballBB, legBB
@@ -496,7 +503,7 @@ updateBall proc
 
 		; red legs
 		mov edx, i
-		invoke getBoundingBox, redRightLegX[edx *4], redRightLegY[edx *4], LEG_WIDTH, LEG_HEIGHT*2, addr legBB
+		invoke getBoundingBox, redRightLegX[edx *4], redRightLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 
 		mov edx, i
 		invoke hasCollided, ballBB, legBB
@@ -518,13 +525,13 @@ drawSticks proc
 	.WHILE (i < 4)
 		invoke setPen, bluePen
 		mov edx, i
-		mov eax, PLAYER_WIDTH/2
+		mov eax, SPR_PLAYER_WIDTH/2
 		add eax, bluleStickX[edx *4]
 		invoke drawLine, eax, 0, eax, WND_HEIGHT
 
 		invoke setPen, redPen
 		mov edx, i
-		mov eax, PLAYER_WIDTH/2
+		mov eax, SPR_PLAYER_WIDTH/2
 		add eax, redStickX[edx *4]
 		invoke drawLine, eax, 0, eax, WND_HEIGHT
 
