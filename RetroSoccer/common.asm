@@ -535,4 +535,82 @@ clearScreen proc color:Color
 	ret
 clearScreen endp
 
+IVec2_scalarMul proc s:uint32, v:ptr IVec2
+	mov ebx, v
+	assume ebx:ptr IVec2
+	
+	mov ecx, s
+
+	mov eax, [ebx].x
+	imul ecx
+	mov [ebx].x, eax
+
+	mov eax, [ebx].y
+	imul ecx
+	mov [ebx].y, eax
+
+	ret
+IVec2_scalarMul endp
+
+IVec2_cpy proc dest:ptr IVec2, src:ptr IVec2
+	mov eax, src
+	mov ebx, dest
+	assume eax:ptr IVec2
+	assume ebx:ptr IVec2
+
+	push [eax].x
+	pop [ebx].x
+	push [eax].y
+	pop [ebx].y
+
+	ret
+IVec2_cpy endp
+
+IVec2_set proc v:ptr IVec2, x:int32, y:int32
+	mov eax, v
+	assume eax:ptr IVec2
+	
+	push x
+	pop [eax].x
+	push y
+	pop [eax].y
+
+	ret
+IVec2_set endp
+
+IVec2_add proc dest:ptr IVec2, b:ptr IVec2
+	mov eax, b
+	assume eax:ptr IVec2
+	mov ebx, [eax].x
+	mov ecx, [eax].y
+	
+	mov eax, dest
+	assume eax:ptr IVec2
+	add [eax].x, ebx
+	add [eax].y, ecx
+	ret
+IVec2_add endp
+
+IVec2_negX proc v:ptr IVec2
+	mov eax, v
+	assume eax:ptr IVec2
+	neg [eax].x
+	ret
+IVec2_negX endp
+
+IVec2_negY proc v:ptr IVec2
+	mov eax, v
+	assume eax:ptr IVec2
+	neg [eax].y
+	ret
+IVec2_negY endp
+
+IVec2_neg proc v:ptr IVec2
+	mov eax, v
+	assume eax:ptr IVec2
+	neg [eax].x
+	neg [eax].y
+	ret
+IVec2_neg endp
+
 end start

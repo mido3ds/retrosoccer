@@ -23,6 +23,7 @@ playerStick uint32 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
 stickUpperLimit uint32 472, 400, 306, 348
 stickLowerLimit uint32 25, 98, 194, 150
 
+BALL_SPEED_SCALE equ 3
 RED_PLAYER_MOVING_DISTANCE equ 7
 KICK_DEFAULT_DIST equ 8
 PLAYER_COLOR_BLUE equ 0
@@ -91,8 +92,10 @@ game_asm:
 
 ; - called before window is shown
 onCreate proc
-	mov ballPos.x, 356
+	mov ballPos.x, 358
 	mov ballPos.y, 245
+	mov ballSpd.x, 0
+	mov ballSpd.y, 0
 
 	invoke loadBitmap, offset fieldFileName
 	mov field, eax
@@ -202,26 +205,31 @@ getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
 	ret
 getBoundingBox endp
 
-hasCollided proc a:AABB, b:AABB
+hasCollided proc a:AABB, b:AABB, collisionDir:ptr IVec2
 	mov eax, a.x0
 	mov ebx, a.y0
 	mov ecx, a.x1
 	mov edx, a.y1
-
-	.IF ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1))
+	; TODO randomize dir
+	.IF ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
+		invoke IVec2_set, collisionDir, 2, -1
 		mov eax, TRUE
 		ret
-	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1))
+	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; left top
+		invoke IVec2_set, collisionDir, -2, 1
 		mov eax, TRUE
 		ret
-	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1))
+	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; right top
+		invoke IVec2_set, collisionDir, 2, 1
 		mov eax, TRUE
 		ret
-	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1))
+	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; left bottom
+		invoke IVec2_set, collisionDir, -2, -1
 		mov eax, TRUE
 		ret
 	.ENDIF
 
+	invoke IVec2_set, collisionDir, 0, 0
 	mov eax, FALSE
 	ret
 hasCollided endp
@@ -497,17 +505,11 @@ updatePlayers proc
 updatePlayers endp
 
 updateBall proc
-	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32
+	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:IVec2
 	mov collided, FALSE
-
-	push mousePos.x
-	pop ballPos.x
-	push mousePos.y
-	pop ballPos.y
-
 	invoke getBoundingBox, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
 	
-	; detect collision
+	; detect collision with legs
 	mov i, 0
 	.WHILE (i < 11) 
 		; first legs
@@ -515,7 +517,7 @@ updateBall proc
 		invoke getBoundingBox, firstLeftLegX[edx *4], firstLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 		
 		mov edx, i
-		invoke hasCollided, ballBB, legBB
+		invoke hasCollided, ballBB, legBB, addr colDir
 		mov collided, al
 		.BREAK .IF (eax == TRUE)
 
@@ -524,14 +526,28 @@ updateBall proc
 		invoke getBoundingBox, secRightLegX[edx *4], secRightLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 
 		mov edx, i
-		invoke hasCollided, ballBB, legBB
+		invoke hasCollided, ballBB, legBB, addr colDir
 		mov collided, al
 		.BREAK .IF (eax == TRUE)
 		
 		inc i	
 	.ENDW
 
-	printf "collided=%i", collided
+	.IF (collided == TRUE)
+		invoke IVec2_scalarMul, BALL_SPEED_SCALE, addr colDir
+		invoke IVec2_cpy, addr ballSpd, addr colDir
+	.ENDIF
+
+	; detect collision with walls
+	.IF (ballBB.y0 <= 9 || ballBB.y1 >= 490) ; up or down
+		invoke IVec2_negY, addr ballSpd
+	.ELSEIF (ballBB.x0 <= 9 || ballBB.x1 >= 790) ; left or right
+		invoke IVec2_negX, addr ballSpd
+	.ENDIF
+
+	invoke IVec2_add, addr ballPos, addr ballSpd
+
+	printf "colDir={%i,%i}\\ballSpd={%i,%i}", collided, colDir.x, colDir.y, ballSpd.x, ballSpd.y
 
 	ret
 updateBall endp

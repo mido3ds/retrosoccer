@@ -46,9 +46,17 @@ double typedef real8 ; 2.23*e–308 : 1.79*e308
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 IVec2 STRUCT
-	x uint32 ?
-	y uint32 ?
+	x int32 ?
+	y int32 ?
 IVec2 ENDS
+
+IVec2_add proto dest:ptr IVec2, b:ptr IVec2
+IVec2_negX proto v:ptr IVec2
+IVec2_negY proto v:ptr IVec2
+IVec2_neg proto v:ptr IVec2
+IVec2_scalarMul proto s:uint32, v:ptr IVec2
+IVec2_cpy proto dest:ptr IVec2, src:ptr IVec2
+IVec2_set proto v:ptr IVec2, x:int32, y:int32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							general  								   ;;
