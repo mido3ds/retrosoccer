@@ -28,6 +28,7 @@ RED_PLAYER_MOVING_DISTANCE equ 7
 KICK_DEFAULT_DIST equ 8
 PLAYER_COLOR_BLUE equ 0
 PLAYER_COLOR_RED equ 1
+MATCH_TOTAL_TIME equ 90*1000
 
 ; sprite sheet info
 BKG_CLR equ 5a5754h
@@ -53,6 +54,7 @@ field Bitmap ?
 sprites Bitmap ?
 bluePen Pen ?
 redPen Pen ?
+elapsedTime uint32 0
 
 ; ball
 ballPos IVec2 <>
@@ -130,6 +132,8 @@ onUpdate proc t:uint32
 	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
 	printf "f[%i,%i,%i,%i],", firstStickSelected[0], firstStickSelected[1], firstStickSelected[2], firstStickSelected[3]
 	printf "s[%i,%i,%i,%i],", secStickSelected[3], secStickSelected[2], secStickSelected[1], secStickSelected[0]
+	printf "%ims,", t
+	printf "score(%02i-%02i),", firstPlayerScore, secPlayerScore
 
 	ret
 onUpdate endp

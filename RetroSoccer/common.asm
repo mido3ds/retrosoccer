@@ -138,8 +138,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 WndProc endp
 
 timerCallback proc	hwnd:HWND, msg:UINT, idTimer:UINT, dwTime:DWORD	
+	push dwTime
 	mov eax, dwTime
 	sub eax, __lastTickCount
+	pop __lastTickCount
 	invoke onUpdate, eax
 	invoke prepareBuffers
 	invoke onDraw
