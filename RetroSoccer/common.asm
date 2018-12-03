@@ -206,11 +206,12 @@ free endp
 
 memset proc dest:pntr, data:byte, len:uint32
 	mov al, data
+	mov ebx, dest
 
 	.WHILE TRUE
 		.BREAK .IF (len==0)
-		mov byte ptr [dest], al	
-		inc dest
+		mov byte ptr [ebx], al	
+		inc ebx
 		dec len
 	.ENDW
 

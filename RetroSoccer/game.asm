@@ -22,8 +22,12 @@ playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
 playerStick uint32 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
 stickUpperLimit uint32 472, 400, 306, 348
 stickLowerLimit uint32 25, 98, 194, 150
+firstStickX uint32 39, 168, 336, 534
+secStickX uint32 761, 632, 464, 266
 
 BALL_SPEED_SCALE equ 3
+BALL_START_FIRST equ <358,245>
+BALL_START_SEC equ <442,243>
 RED_PLAYER_MOVING_DISTANCE equ 7
 KICK_DEFAULT_DIST equ 8
 PLAYER_COLOR_BLUE equ 0
@@ -63,29 +67,27 @@ ballSpd IVec2 <>
 ; first player
 firstPlayerScore uint32 0
 firstPlayerColor uint32 PLAYER_COLOR_BLUE
-firstStickSelected bool FALSE, FALSE, FALSE, FALSE
-firstStickY uint32 250, 250, 250, 250
-firstStickX uint32 39, 168, 336, 534
-firstPlayerX uint32 11 dup(0)
-firstPlayerY uint32 11 dup(0)
-firstLeftLegX uint32 11 dup(0)
-firstLeftLegY uint32 11 dup(0)
-firstRightLegX uint32 11 dup(0)
-firstRightLegY uint32 11 dup(0)
+firstStickSelected bool 4 dup(FALSE)
+firstStickY uint32 4 dup(250)
+firstPlayerX uint32 11 dup(?)
+firstPlayerY uint32 11 dup(?)
+firstLeftLegX uint32 11 dup(?)
+firstLeftLegY uint32 11 dup(?)
+firstRightLegX uint32 11 dup(?)
+firstRightLegY uint32 11 dup(?)
 firstKick int32 0
 
 ; second player
 secPlayerScore uint32 0
 secPlayerColor uint32 PLAYER_COLOR_RED
-secStickSelected bool FALSE, FALSE, FALSE, FALSE
-secStickY uint32 250, 250, 250, 250
-secStickX uint32 761, 632, 464, 266
-secPlayerX uint32 11 dup(0)
-secPlayerY uint32 11 dup(0)
-secLeftLegX uint32 11 dup(0)
-secLeftLegY uint32 11 dup(0)
-secRightLegX uint32 11 dup(0)
-secRightLegY uint32 11 dup(0)
+secStickSelected bool 4 dup(FALSE)
+secStickY uint32 4 dup(250)
+secPlayerX uint32 11 dup(?)
+secPlayerY uint32 11 dup(?)
+secLeftLegX uint32 11 dup(?)
+secLeftLegY uint32 11 dup(?)
+secRightLegX uint32 11 dup(?)
+secRightLegY uint32 11 dup(?)
 secKick int32 0
 secMovingUpDist int32 0
 
@@ -239,7 +241,7 @@ hasCollided proc a:AABB, b:AABB, collisionDir:ptr IVec2
 	ret
 hasCollided endp
 
-updateBlueLegsPositions proc playerNumber:uint32
+updateFirstLegsPositions proc playerNumber:uint32
 	; get kick
 	local kick:int32
 
@@ -268,10 +270,10 @@ updateBlueLegsPositions proc playerNumber:uint32
 	mov firstRightLegY[eax *4], edx
 
 	ret
-updateBlueLegsPositions endp
+updateFirstLegsPositions endp
 
 
-updateRedLegsPositions proc playerNumber:uint32
+updateSecLegsPositions proc playerNumber:uint32
 	; get kick
 	local kick:int32
 
@@ -300,9 +302,9 @@ updateRedLegsPositions proc playerNumber:uint32
 	mov secLeftLegY[eax *4], edx
 
 	ret
-updateRedLegsPositions endp
+updateSecLegsPositions endp
 
-updateBluePlayersPositions proc playerNumber:uint32
+updateFirstPlayersPositions proc playerNumber:uint32
 	mov eax, playerNumber
 	mov ebx, playerStick[eax *4]
 	
@@ -315,9 +317,9 @@ updateBluePlayersPositions proc playerNumber:uint32
 	mov firstPlayerX[eax *4], ecx
 	mov firstPlayerY[eax *4], edx
 	ret
-updateBluePlayersPositions endp
+updateFirstPlayersPositions endp
 
-updateRedPlayersPositions proc playerNumber:uint32
+updateSecPlayersPositions proc playerNumber:uint32
 	mov eax, playerNumber
 	mov ebx, playerStick[eax *4]
 	
@@ -330,7 +332,7 @@ updateRedPlayersPositions proc playerNumber:uint32
 	mov secPlayerX[eax *4], ecx
 	mov secPlayerY[eax *4], edx
 	ret
-updateRedPlayersPositions endp
+updateSecPlayersPositions endp
 
 updateInput proc
 	local numOfSelected:uint32
@@ -497,11 +499,11 @@ updatePlayers proc
 
 	mov i, 0
 	.WHILE (i < 11)
-		invoke updateBluePlayersPositions, i
-		invoke updateBlueLegsPositions, i
+		invoke updateFirstPlayersPositions, i
+		invoke updateFirstLegsPositions, i
 
-		invoke updateRedPlayersPositions, i
-		invoke updateRedLegsPositions, i
+		invoke updateSecPlayersPositions, i
+		invoke updateSecLegsPositions, i
 
 		inc i
 	.ENDW
@@ -513,6 +515,30 @@ updateBall proc
 	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:IVec2
 	mov collided, FALSE
 	invoke getBoundingBox, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
+
+	; detect collision with goals
+	.IF (ballBB.y0 >= 175 && ballBB.y1 <= 325)
+		.IF (ballBB.x0 <= 11) ; left
+			call resetSticks
+			inc secPlayerScore
+			invoke IVec2_set, addr ballPos, BALL_START_SEC
+			invoke IVec2_set, addr ballSpd, 0, 0
+			ret
+		.ELSEIF (ballBB.x1 >= 788) ; right
+			call resetSticks
+			inc firstPlayerScore
+			invoke IVec2_set, addr ballPos, BALL_START_FIRST
+			invoke IVec2_set, addr ballSpd, 0, 0
+			ret
+		.ENDIF
+	.ENDIF
+
+	; detect collision with walls
+	.IF (ballBB.y0 <= 9 || ballBB.y1 >= 490) ; up or down
+		invoke IVec2_negY, addr ballSpd
+	.ELSEIF (ballBB.x0 <= 9 || ballBB.x1 >= 790) ; left or right
+		invoke IVec2_negX, addr ballSpd
+	.ENDIF
 	
 	; detect collision with legs
 	mov i, 0
@@ -543,16 +569,13 @@ updateBall proc
 		invoke IVec2_cpy, addr ballSpd, addr colDir
 	.ENDIF
 
-	; detect collision with walls
-	.IF (ballBB.y0 <= 9 || ballBB.y1 >= 490) ; up or down
-		invoke IVec2_negY, addr ballSpd
-	.ELSEIF (ballBB.x0 <= 9 || ballBB.x1 >= 790) ; left or right
-		invoke IVec2_negX, addr ballSpd
-	.ENDIF
-
 	invoke IVec2_add, addr ballPos, addr ballSpd
+	;push mousePos.x
+	;pop ballPos.x
+	;push mousePos.y
+	;pop ballPos.y
 
-	printf "colDir(%02i,%02i),ballSpd(%02i,%02i)", colDir.x, colDir.y, ballSpd.x, ballSpd.y
+	printf "colDir(%02i,%02i),ballSpd(%02i,%02i),", colDir.x, colDir.y, ballSpd.x, ballSpd.y
 
 	ret
 updateBall endp
@@ -600,5 +623,17 @@ drawPlayers proc
 
 	ret
 drawPlayers endp
+
+resetSticks proc
+	mov firstStickY[0], 250
+	mov firstStickY[1*4], 250
+	mov firstStickY[2*4], 250
+	mov firstStickY[3*4], 250
+	mov secStickY[0*4], 250
+	mov secStickY[1*4], 250
+	mov secStickY[2*4], 250
+	mov secStickY[3*4], 250
+	ret 
+resetSticks endp
 
 end game_asm
