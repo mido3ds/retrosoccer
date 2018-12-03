@@ -43,6 +43,7 @@ __mainWnd HWND ?
 __totalHeight uint32 ?
 __hdcTemp HDC ?
 __lastTickCount uint32 ?
+__randSeed uint32 ?
 
 .CODE
 start proc
@@ -100,6 +101,7 @@ start proc
 
 	invoke GetTickCount
 	mov __lastTickCount, eax
+	mov __randSeed, eax
 	invoke SetTimer, __mainWnd, UPDATE_TIMER_ID, UPDATE_TIME_MILIS, offset timerCallback
 
 	.WHILE TRUE      
@@ -612,5 +614,38 @@ IVec2_neg proc v:ptr IVec2
 	neg [eax].y
 	ret
 IVec2_neg endp
+
+RAND_A equ 69069
+RAND_B equ 69069 ;TODO make them different
+rand proc
+	mov eax, __randSeed
+	mov ebx, RAND_A
+	mul ebx
+	add eax, RAND_B
+	mov __randSeed, eax
+	ret
+rand endp
+
+randInRange proc a:uint32, b:uint32
+	invoke rand
+	mov ebx, b
+	sub ebx, a
+	mov edx, 0
+	div ebx
+	add eax, a
+	ret
+randInRange endp
+
+randBool proc
+	invoke rand
+	and eax, 1
+	ret
+randBool endp
+
+seedRand proc s:uint32
+	push s
+	pop __randSeed
+	ret
+seedRand endp
 
 end start

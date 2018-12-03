@@ -58,6 +58,12 @@ IVec2_scalarMul proto s:uint32, v:ptr IVec2
 IVec2_cpy proto dest:ptr IVec2, src:ptr IVec2
 IVec2_set proto v:ptr IVec2, x:int32, y:int32
 
+; simple pseudo-random number generator (32 bit)
+rand proto
+randInRange proto a:uint32, b:uint32 ; in [a,b)
+randBool proto
+seedRand proto s:uint32
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							general  								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

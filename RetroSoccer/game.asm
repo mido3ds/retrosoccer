@@ -206,25 +206,30 @@ getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
 getBoundingBox endp
 
 hasCollided proc a:AABB, b:AABB, collisionDir:ptr IVec2
+	invoke randBool
+	mov esi, eax
+
 	mov eax, a.x0
 	mov ebx, a.y0
 	mov ecx, a.x1
 	mov edx, a.y1
-	; TODO randomize dir
+
 	.IF ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
-		invoke IVec2_set, collisionDir, 2, -1
+		neg esi
+		invoke IVec2_set, collisionDir, 2, esi
 		mov eax, TRUE
 		ret
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; left top
-		invoke IVec2_set, collisionDir, -2, 1
+		invoke IVec2_set, collisionDir, -2, esi
 		mov eax, TRUE
 		ret
 	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; right top
-		invoke IVec2_set, collisionDir, 2, 1
+		invoke IVec2_set, collisionDir, 2, esi
 		mov eax, TRUE
 		ret
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; left bottom
-		invoke IVec2_set, collisionDir, -2, -1
+		neg si
+		invoke IVec2_set, collisionDir, -2, esi
 		mov eax, TRUE
 		ret
 	.ENDIF
