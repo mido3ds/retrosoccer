@@ -7,6 +7,8 @@ AABB STRUCT
 	y1 uint32 ?
 AABB ENDS
 
+pointInBB proto a:AABB, p:vec
+
 .CONST
 playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
 		-74-SPR_PLAYER_HEIGHT/2, ;s1
@@ -25,14 +27,21 @@ stickLowerLimit uint32 25, 98, 194, 150
 firstStickX uint32 39, 168, 336, 534
 secStickX uint32 761, 632, 464, 266
 
-BALL_SPEED_SCALE equ 3
+MAIN_SCREEN equ 0
+GAME_SCREEN equ 1
+GAME_OVER_SCREEN equ 2
+
 BALL_START_FIRST equ <358,245>
 BALL_START_SEC equ <442,243>
 RED_PLAYER_MOVING_DISTANCE equ 7
 KICK_DEFAULT_DIST equ 8
 PLAYER_COLOR_BLUE equ 0
 PLAYER_COLOR_RED equ 1
-MATCH_TOTAL_TIME equ 50*1000
+
+LV1_MATCH_TIME equ 120*1000
+LV1_BALL_SPD equ 3
+LV2_MATCH_TIME equ 80*1000
+LV2_BALL_SPD equ 7
 
 ; sprite sheet info
 BKG_CLR equ 5a5754h
@@ -54,11 +63,25 @@ SPR_BALL equ <80,0,SPR_BALL_LEN,SPR_BALL_LEN,BKG_CLR>
 .DATA
 fieldFileName db "assets/field.bmp",0
 spritesFileName db "assets/spritesheet.bmp",0
+mainScreenFileName db "assets/mainScreen.bmp",0
+gameOverScreenFileName db "assets/gameOverScreen.bmp",0
 field Bitmap ?
 sprites Bitmap ?
+mainScreenBmp Bitmap ?
+gameOverScreenBmp Bitmap ?
 bluePen Pen ?
 redPen Pen ?
 elapsedTime uint32 0
+
+screen uint32 MAIN_SCREEN
+
+level uint32 1
+ballSpeedScalar uint32 ?
+matchTotalTime uint32 ?
+
+; level buttons
+lvl1BoxBB AABB <>
+lvl2BoxBB AABB <>
 
 ; ball
 ballPos vec <>
@@ -103,11 +126,26 @@ onCreate proc
 	mov field, eax
 	invoke loadBitmap, offset spritesFileName
 	mov sprites, eax
+	invoke loadBitmap, offset mainScreenFileName
+	mov mainScreenBmp, eax
+	invoke loadBitmap, offset gameOverScreenFileName
+	mov gameOverScreenBmp, eax
 
 	invoke createPen, 3, 0ff0000h ;blue
 	mov bluePen, eax
 	invoke createPen, 3, 0000ffh ;sec
 	mov redPen, eax
+
+	mov lvl1BoxBB.x0, 313
+	mov lvl1BoxBB.y0, 237
+	mov lvl1BoxBB.x1, 484
+	mov lvl1BoxBB.y1, 300
+
+	mov lvl2BoxBB.x0, 313
+	mov lvl2BoxBB.y0, 313
+	mov lvl2BoxBB.x1, 484
+	mov lvl2BoxBB.y1, 379
+
 	ret
 onCreate endp
 
@@ -122,35 +160,69 @@ onDestroy endp
 
 ; - game logic
 onUpdate proc t:uint32
-	call updateInput
-	call updateSticks
-	call updatePlayers
-	call updateBall
+	.IF (screen == MAIN_SCREEN)
+		invoke pointInBB, lvl1BoxBB, mousePos
+		.if (eax == TRUE)
+			invoke isLeftMouseClicked
+			.if (eax == TRUE)
+				mov ballSpeedScalar, LV1_BALL_SPD
+				mov matchTotalTime, LV1_MATCH_TIME
+				mov level, 1
+				mov screen, GAME_SCREEN
+			.endif
+		.endif
+		invoke pointInBB, lvl2BoxBB, mousePos
+		.if (eax == TRUE)
+			invoke isLeftMouseClicked
+			.if (eax == TRUE)
+				mov ballSpeedScalar, LV2_BALL_SPD
+				mov matchTotalTime, LV2_MATCH_TIME
+				mov level, 2
+				mov screen, GAME_SCREEN
+			.endif
+		.endif
+	.ELSEIF (screen == GAME_SCREEN)
+		call updateInput
+		call updateSticks
+		call updatePlayers
+		call updateBall
 
-	mov eax, t
-	add elapsedTime, eax
-	.IF (elapsedTime >= MATCH_TOTAL_TIME)
-		call exit
-	.ENDIF
-
+		mov eax, t
+		add elapsedTime, eax
+		mov eax, elapsedTime
+		.IF (eax >= matchTotalTime)
+			mov screen, GAME_OVER_SCREEN
+		.ENDIF
+	.ELSEIF (screen == GAME_OVER_SCREEN)
+		
+	.ENDIF 
+	
 	;debugging
 	printf 13, 0 ;remove last line
 	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
 	printf "f[%i,%i,%i,%i],", firstStickSelected[0], firstStickSelected[1], firstStickSelected[2], firstStickSelected[3]
 	printf "s[%i,%i,%i,%i],", secStickSelected[3], secStickSelected[2], secStickSelected[1], secStickSelected[0]
-	printf "%ims,", t
 	printf "score(%02i-%02i),", firstPlayerScore, secPlayerScore
 	printf "elapsedTime=%i,", elapsedTime
+	printf "level=%i,", level
 
 	ret
 onUpdate endp
 
 ; - game rendering
 onDraw proc
-	call drawField
-	call drawBall
-	call drawSticks
-	call drawPlayers
+	.IF (screen == MAIN_SCREEN)
+		invoke renderBitmap, mainScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	.ELSEIF (screen == GAME_SCREEN)
+		call drawField
+		call drawBall
+		call drawSticks
+		call drawPlayers
+		call writeScore
+	.ELSEIF (screen == GAME_OVER_SCREEN)
+		invoke renderBitmap, gameOverScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+		call printFinalResult
+	.ENDIF
 
 	ret
 onDraw endp
@@ -217,9 +289,9 @@ getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
 getBoundingBox endp
 
 hasCollided proc a:AABB, b:AABB, collisionDir:ptr vec
-	local randomX:int32
+	local randomY:int32
 	invoke randInRange, -1, 2
-	mov randomX, eax
+	mov randomY, eax
 
 	mov eax, a.x0
 	mov ebx, a.y0
@@ -227,16 +299,16 @@ hasCollided proc a:AABB, b:AABB, collisionDir:ptr vec
 	mov edx, a.y1
 
 	.IF     ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
-		invoke vec_set, collisionDir, +2, randomX
+		invoke vec_set, collisionDir, +2, randomY
 		mov eax, TRUE
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; left top
-		invoke vec_set, collisionDir, -2, randomX
+		invoke vec_set, collisionDir, -2, randomY
 		mov eax, TRUE
 	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; right top
-		invoke vec_set, collisionDir, +2, randomX
+		invoke vec_set, collisionDir, +2, randomY
 		mov eax, TRUE
 	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; left bottom
-		invoke vec_set, collisionDir, -2, randomX
+		invoke vec_set, collisionDir, -2, randomY
 		mov eax, TRUE
 	.ELSE
 		invoke vec_set, collisionDir, 0, 0
@@ -422,22 +494,22 @@ updateInput proc
 	.ENDIF
 
 	mov secMovingUpDist, 0
-	invoke isKeyPressed, VK_UP
+	invoke isKeyPressed, VK_G
 	.IF (eax == TRUE)
 		mov secMovingUpDist, -RED_PLAYER_MOVING_DISTANCE
 	.ENDIF
-	invoke isKeyPressed, VK_DOWN
+	invoke isKeyPressed, VK_B
 	.IF (eax == TRUE)
 		mov secMovingUpDist, RED_PLAYER_MOVING_DISTANCE
 	.ENDIF
 
 	; kick (sec)
 	mov secKick, 0
-	invoke isKeyPressed, VK_RIGHT
+	invoke isKeyPressed, VK_N
 	.IF (eax == TRUE)
 		mov secKick, KICK_DEFAULT_DIST
 	.ENDIF
-	invoke isKeyPressed, VK_LEFT
+	invoke isKeyPressed, VK_V
 	.IF (eax == TRUE)
 	   mov secKick, -KICK_DEFAULT_DIST
 	.ENDIF
@@ -570,15 +642,11 @@ updateBall proc
 	.ENDW
 
 	.IF (collided == TRUE)
-		invoke vec_smul, BALL_SPEED_SCALE, addr colDir
+		invoke vec_smul, ballSpeedScalar, addr colDir
 		invoke vec_cpy, addr ballSpd, addr colDir
 	.ENDIF
 
 	invoke vec_add, addr ballPos, addr ballSpd
-	;push mousePos.x
-	;pop ballPos.x
-	;push mousePos.y
-	;pop ballPos.y
 
 	printf "colDir(%02i,%02i),ballSpd(%02i,%02i),", colDir.x, colDir.y, ballSpd.x, ballSpd.y
 
@@ -640,5 +708,68 @@ resetSticks proc
 	mov secStickY[3*4], 250
 	ret 
 resetSticks endp
+
+writeScore proc
+	.CONST
+	playersNames db "Player1 - Player2",0
+	scoreFormat db "%02i - %02i",0 ; to use with sprintf, i.e "04 - 10"
+	timeFormat db "Time: %03i",0
+	.DATA
+	buf db 8 dup(0)
+	.CODE
+	invoke drawText, offset playersNames, 615, 17, 777, 63, DT_LEFT or DT_CENTER
+
+	invoke sprintf, offset buf, offset scoreFormat, firstPlayerScore, secPlayerScore
+	invoke drawText, offset buf, 615, 17+20, 777, 63+20, DT_LEFT or DT_CENTER
+
+	mov eax, elapsedTime
+	mov ebx, 1000
+	mov edx, 0
+	div ebx
+	invoke sprintf, offset buf, offset timeFormat, eax
+	invoke drawText, offset buf, 36, 17, 128, 63, DT_LEFT or DT_TOP
+	ret
+writeScore endp
+
+pointInBB proc a:AABB, p:vec
+	mov eax, p.x
+	mov ebx, p.y
+
+	.if (eax >= a.x0 && eax <= a.x1 && ebx >= a.y0 && ebx <= a.y1)
+		mov eax, TRUE
+		ret
+	.ENDIF
+
+	mov eax, FALSE
+	ret
+pointInBB endp
+
+printFinalResult proc
+	local playerWon:uint32
+
+	.CONST
+	finalResultFormat db "Player %i",0
+	finalScoreFormat db "Score: %i - %i",0
+	drawResultStr db "Draw",0
+	.DATA
+	finalResultBuf db 50 dup(0)
+	.CODE
+
+	mov eax, secPlayerScore
+	mov playerWon, 2
+	.if (firstPlayerScore > eax)
+		mov playerWon, 1
+	.elseif (firstPlayerScore == eax)
+		invoke drawText, offset drawResultStr, 283, 297, 514, 385, DT_LEFT or DT_CENTER
+		ret
+	.endif
+
+	invoke sprintf, offset finalResultBuf, offset finalResultFormat, playerWon
+	invoke drawText, offset finalResultBuf, 283, 297, 514, 385, DT_LEFT or DT_CENTER
+
+	invoke sprintf, offset finalResultBuf, offset finalScoreFormat, firstPlayerScore, secPlayerScore
+	invoke drawText, offset finalResultBuf, 283, 297+20, 514, 385+20, DT_LEFT or DT_CENTER
+	ret
+printFinalResult endp
 
 end game_asm
