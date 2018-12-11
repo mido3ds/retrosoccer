@@ -149,9 +149,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <MASM Include="AABB.asm" />
     <MASM Include="common.asm">
       <FileType>Document</FileType>
     </MASM>
+    <None Include="AABB.inc" />
     <None Include="common.inc" />
     <MASM Include="game.asm">
       <FileType>Document</FileType>

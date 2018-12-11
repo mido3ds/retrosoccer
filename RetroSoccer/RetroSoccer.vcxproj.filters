@@ -14,12 +14,18 @@
     <None Include="common.inc">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="AABB.inc">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="common.asm">
       <Filter>Source Files</Filter>
     </MASM>
     <MASM Include="game.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="AABB.asm">
       <Filter>Source Files</Filter>
     </MASM>
   </ItemGroup>

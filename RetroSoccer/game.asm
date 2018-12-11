@@ -1,13 +1,5 @@
 include common.inc
-
-AABB STRUCT
-	x0 uint32 ?
-	y0 uint32 ?
-	x1 uint32 ?
-	y1 uint32 ?
-AABB ENDS
-
-pointInBB proto a:AABB, p:vec
+include AABB.inc
 
 .CONST
 playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
@@ -161,7 +153,7 @@ onDestroy endp
 ; - game logic
 onUpdate proc t:uint32
 	.IF (screen == MAIN_SCREEN)
-		invoke pointInBB, lvl1BoxBB, mousePos
+		invoke aabb_pointInBB, lvl1BoxBB, mousePos
 		.if (eax == TRUE)
 			invoke isLeftMouseClicked
 			.if (eax == TRUE)
@@ -171,7 +163,7 @@ onUpdate proc t:uint32
 				mov screen, GAME_SCREEN
 			.endif
 		.endif
-		invoke pointInBB, lvl2BoxBB, mousePos
+		invoke aabb_pointInBB, lvl2BoxBB, mousePos
 		.if (eax == TRUE)
 			invoke isLeftMouseClicked
 			.if (eax == TRUE)
@@ -266,57 +258,6 @@ drawField proc
 	invoke renderBitmap, field, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 drawField endp
-
-getBoundingBox proc x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
-	mov eax, aabb
-	assume eax:ptr AABB
-
-	push x
-	pop [eax].x0
-
-	push y
-	pop [eax].y0
-
-	mov ebx, x
-	add ebx, w
-	mov [eax].x1, ebx
-
-	mov ebx, y
-	add ebx, h
-	mov [eax].y1, ebx
-
-	ret
-getBoundingBox endp
-
-hasCollided proc a:AABB, b:AABB, collisionDir:ptr vec
-	local randomY:int32
-	invoke randInRange, -1, 2
-	mov randomY, eax
-
-	mov eax, a.x0
-	mov ebx, a.y0
-	mov ecx, a.x1
-	mov edx, a.y1
-
-	.IF     ((eax >= b.x0 && eax <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; right bottom
-		invoke vec_set, collisionDir, +2, randomY
-		mov eax, TRUE
-	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; left top
-		invoke vec_set, collisionDir, -2, randomY
-		mov eax, TRUE
-	.ELSEIF ((eax >= b.x0 && eax <= b.x1) && (edx >= b.y0 && edx <= b.y1)) ; right top
-		invoke vec_set, collisionDir, +2, randomY
-		mov eax, TRUE
-	.ELSEIF ((ecx >= b.x0 && ecx <= b.x1) && (ebx >= b.y0 && ebx <= b.y1)) ; left bottom
-		invoke vec_set, collisionDir, -2, randomY
-		mov eax, TRUE
-	.ELSE
-		invoke vec_set, collisionDir, 0, 0
-		mov eax, FALSE
-	.ENDIF
-
-	ret
-hasCollided endp
 
 updateFirstLegsPositions proc playerNumber:uint32
 	; get kick
@@ -591,7 +532,7 @@ updatePlayers endp
 updateBall proc
 	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:vec
 	mov collided, FALSE
-	invoke getBoundingBox, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
+	invoke aabb_calc, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
 
 	; detect collision with goals
 	.IF (ballBB.y0 >= 175 && ballBB.y1 <= 325)
@@ -622,19 +563,19 @@ updateBall proc
 	.WHILE (i < 11) 
 		; first legs
 		mov edx, i
-		invoke getBoundingBox, firstLeftLegX[edx *4], firstLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
+		invoke aabb_calc, firstLeftLegX[edx *4], firstLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 		
 		mov edx, i
-		invoke hasCollided, ballBB, legBB, addr colDir
+		invoke aabb_collided, ballBB, legBB, addr colDir
 		mov collided, al
 		.BREAK .IF (eax == TRUE)
 
 		; sec legs
 		mov edx, i
-		invoke getBoundingBox, secRightLegX[edx *4], secRightLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
+		invoke aabb_calc, secRightLegX[edx *4], secRightLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
 
 		mov edx, i
-		invoke hasCollided, ballBB, legBB, addr colDir
+		invoke aabb_collided, ballBB, legBB, addr colDir
 		mov collided, al
 		.BREAK .IF (eax == TRUE)
 		
@@ -730,19 +671,6 @@ writeScore proc
 	invoke drawText, offset buf, 36, 17, 128, 63, DT_LEFT or DT_TOP
 	ret
 writeScore endp
-
-pointInBB proc a:AABB, p:vec
-	mov eax, p.x
-	mov ebx, p.y
-
-	.if (eax >= a.x0 && eax <= a.x1 && ebx >= a.y0 && ebx <= a.y1)
-		mov eax, TRUE
-		ret
-	.ENDIF
-
-	mov eax, FALSE
-	ret
-pointInBB endp
 
 printFinalResult proc
 	local playerWon:uint32
