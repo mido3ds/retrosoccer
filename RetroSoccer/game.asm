@@ -219,7 +219,7 @@ onDraw proc
 	ret
 onDraw endp
 
-drawBluePlayer proc playerNumber:uint32
+drawFirstPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
 	.IF (firstPlayerColor == PLAYER_COLOR_BLUE)
@@ -232,9 +232,9 @@ drawBluePlayer proc playerNumber:uint32
 		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_RED_PLAYER0 ;player
 	.ENDIF
 	ret
-drawBluePlayer endp
+drawFirstPlayer endp
 
-drawRedPlayer proc playerNumber:uint32
+drawSecPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
 	.IF (secPlayerColor == PLAYER_COLOR_BLUE)
@@ -247,7 +247,7 @@ drawRedPlayer proc playerNumber:uint32
 		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_RED_PLAYER1;player
 	.ENDIF
 	ret
-drawRedPlayer endp
+drawSecPlayer endp
 
 drawBall proc
 	invoke renderTBitmap, sprites, ballPos.x, ballPos.y, SPR_BALL
@@ -356,7 +356,7 @@ updateInput proc
 	local numOfSelected:uint32
 	mov numOfSelected, 0
 
-	; move sticks (first)
+	; move sticks
 	invoke isKeyPressed, VK_Q
 	mov firstStickSelected[0], al
 	.IF (firstStickSelected[0] == TRUE)
@@ -389,7 +389,7 @@ updateInput proc
 		.ENDIF
 	.ENDIF
 
-	; kick (first)
+	; kick
 	mov firstKick, 0
 	invoke isLeftMouseClicked
 	.IF (eax == TRUE)
@@ -400,61 +400,6 @@ updateInput proc
 		mov firstKick, -KICK_DEFAULT_DIST
 	.ENDIF
 
-	; move sticks (sec)
-	mov numOfSelected, 0
-	invoke isKeyPressed, VK_P
-	mov secStickSelected[0], al
-	.IF (secStickSelected[0] == TRUE)
-		inc numOfSelected
-	.ENDIF
-
-	invoke isKeyPressed, VK_O
-	mov secStickSelected[1], al
-	.IF (secStickSelected[1] == TRUE)
-		inc numOfSelected
-	.ENDIF
-
-	invoke isKeyPressed, VK_I
-	mov secStickSelected[2], al
-	.IF (secStickSelected[2] == TRUE)
-		inc numOfSelected
-		.IF (numOfSelected > 2)
-			dec numOfSelected
-			mov secStickSelected[2], FALSE
-		.ENDIF
-	.ENDIF
-
-	invoke isKeyPressed, VK_U
-	mov secStickSelected[3], al
-	.IF (secStickSelected[3] == TRUE)
-		inc numOfSelected
-		.IF (numOfSelected > 2)
-			dec numOfSelected
-			mov secStickSelected[3], FALSE
-		.ENDIF
-	.ENDIF
-
-	mov secMovingUpDist, 0
-	invoke isKeyPressed, VK_G
-	.IF (eax == TRUE)
-		mov secMovingUpDist, -RED_PLAYER_MOVING_DISTANCE
-	.ENDIF
-	invoke isKeyPressed, VK_B
-	.IF (eax == TRUE)
-		mov secMovingUpDist, RED_PLAYER_MOVING_DISTANCE
-	.ENDIF
-
-	; kick (sec)
-	mov secKick, 0
-	invoke isKeyPressed, VK_N
-	.IF (eax == TRUE)
-		mov secKick, KICK_DEFAULT_DIST
-	.ENDIF
-	invoke isKeyPressed, VK_V
-	.IF (eax == TRUE)
-	   mov secKick, -KICK_DEFAULT_DIST
-	.ENDIF
-
 	ret
 updateInput endp
 
@@ -463,7 +408,6 @@ updateSticks proc
 
 	mov i, 0
 	.WHILE (i < 4)
-		; first stick
 		mov eax, i
 		.IF (firstStickSelected[eax] == TRUE)
 			mov ebx, mousePos.y
@@ -481,28 +425,6 @@ updateSticks proc
 				; firstStickY[i] = stickLowerLimit[i]
 				push stickLowerLimit[eax *4]
 				pop firstStickY[eax *4]
-			.ENDIF
-		.ENDIF
-
-		; sec stick
-		mov eax, i
-		.IF (secStickSelected[eax] == TRUE)
-			mov ebx, secMovingUpDist
-			add secStickY[eax *4], ebx
-			mov ebx, secStickY[eax *4]
-
-			; upper
-			.IF (ebx > stickUpperLimit[eax *4])
-				; secStickY[i] = stickUpperLimit[i]
-				push stickUpperLimit[eax *4]
-				pop secStickY[eax *4]
-			.ENDIF
-
-			; lower 
-			.IF (ebx < stickLowerLimit[eax *4])
-				; secStickY[i] = stickLowerLimit[i]
-				push stickLowerLimit[eax *4]
-				pop secStickY[eax *4]
 			.ENDIF
 		.ENDIF
 
@@ -630,8 +552,8 @@ drawPlayers proc
 
 	mov i, 0
 	.WHILE (i < 11)
-		invoke drawBluePlayer, i
-		invoke drawRedPlayer, i
+		invoke drawFirstPlayer, i
+		invoke drawSecPlayer, i
 		inc i
 	.ENDW
 

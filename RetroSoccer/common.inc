@@ -604,6 +604,9 @@ VK_Z								 equ 5Ah
 ; eax=TRUE|FALSE
 isKeyPressed proto key:VKey
 
+; eax=char|NULL
+getCharInput proto
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							mouse   								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

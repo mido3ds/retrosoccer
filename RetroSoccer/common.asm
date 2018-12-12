@@ -44,6 +44,7 @@ __totalHeight uint32 ?
 __hdcTemp HDC ?
 __lastTickCount uint32 ?
 __randSeed uint32 ?
+__charInput uint32 ?
 
 .CODE
 start proc
@@ -128,6 +129,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 	.ELSEIF uMsg==WM_MOUSEMOVE
 		invoke GetCursorPos, addr mousePos
 		invoke ScreenToClient, __mainWnd, addr mousePos
+	.elseif uMsg==WM_CHAR
+		push wParam
+		pop __charInput
     .ELSE 
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
         ret 
@@ -146,6 +150,9 @@ timerCallback proc	hwnd:HWND, msg:UINT, idTimer:UINT, dwTime:DWORD
 	invoke prepareBuffers
 	invoke onDraw
 	invoke swapBuffers
+
+	mov __charInput, NULL
+
 	ret
 timerCallback endp
 
@@ -277,6 +284,11 @@ isKeyPressed proc key:VKey
 	shr eax, 15
     ret
 isKeyPressed endp
+
+getCharInput proc
+	mov eax, __charInput
+	ret 
+getCharInput endp
 
 isLeftMouseClicked proc
 	invoke isKeyPressed, VK_LBUTTON
