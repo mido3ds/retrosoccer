@@ -31,11 +31,7 @@ player_asm:
 player1_reset proc
 	mov p1.score, 0
 	mov p1.kickDir, 0
-
-	; sticks
 	call player1_resetSticks
-
-	; figures
 	call player1_updateFigs
 
 	ret
@@ -65,7 +61,7 @@ player1_draw proc
 
 	; figures
 	mov ebx, 0
-	.while (ebx<11)
+	.while (ebx < 11)
 		.if (p1.color == PLAYER_COLOR_BLUE)
 			invoke renderTBitmap, sprites, p1.legPos[ebx * sizeof Vec].x, p1.legPos[ebx * sizeof Vec].y, SPR_BLUE_LEG1;leg
 			invoke renderTBitmap, sprites, p1.figPos[ebx * sizeof Vec].x, p1.figPos[ebx * sizeof Vec].y, SPR_BLUE_PLAYER1 ;figure
@@ -147,20 +143,20 @@ player1_updateSticks proc
 		mov eax, i
 		.if (p1.stickIsSelected[eax] == TRUE)
 			mov ebx, mousePos.y
-			mov p1.stickPos[eax *4].y, ebx
+			mov p1.stickPos[eax * sizeof Vec].y, ebx
 
 			; upper
 			.if (ebx > stickUpperLimit[eax *4])
 				; p1.stickPos[i].y = stickUpperLimit[i]
 				push stickUpperLimit[eax *4]
-				pop p1.stickPos[eax *4].y
+				pop p1.stickPos[eax * sizeof Vec].y
 			.endif
 
 			; lower 
 			.if (ebx < stickLowerLimit[eax *4])
 				; p1.stickPos[i].y = stickLowerLimit[i]
 				push stickLowerLimit[eax *4]
-				pop p1.stickPos[eax *4].y
+				pop p1.stickPos[eax * sizeof Vec].y
 			.endif
 		.endif
 
@@ -173,7 +169,7 @@ player1_updateSticks endp
 player1_updateFigs proc
 	local i:uint32
 	mov i, 0
-	.while (i<11)
+	.while (i < 11)
 		; figPos[i].x = stickPos[figStickNum[i]].x - SPR_PLAYER_WIDTH/2
 		mov eax, i
 		mov eax, figStickNum[eax * sizeof uint32]
@@ -182,15 +178,25 @@ player1_updateFigs proc
 		mov ebx, i
 		mov p1.figPos[ebx * sizeof Vec].x, eax
 		
-		; figPos[i].y = figOffsetY[i] + WND_HEIGHT/2
-		mov eax, figOffsetY[ebx * sizeof uint32] 
-		add eax, WND_HEIGHT/2
+		; figPos[i].y = stickPos[figStickNum[i]].y + figOffsetY[i]
+		mov eax, i
+		mov eax, figStickNum[eax * sizeof uint32]
+		mov eax, p1.stickPos[eax * sizeof Vec].y
+		add eax, figOffsetY[ebx * sizeof uint32] 
 		mov p1.figPos[ebx * sizeof Vec].y, eax
 
 		; legPos[i] = figPos[i] + (LEG1_OFFSET_X, LEG1_OFFSET_Y)
 		invoke vec_cpy, addr p1.legPos[ebx * sizeof Vec], addr p1.figPos[ebx * sizeof Vec]
+		mov ebx, i
 		add p1.legPos[ebx * sizeof Vec].x, LEG1_OFFSET_X
 		add p1.legPos[ebx * sizeof Vec].y, LEG1_OFFSET_Y
+
+		; legPos[i].x += kickDir
+		mov eax, figStickNum[ebx * sizeof uint32]
+		.if (p1.stickIsSelected[eax] == TRUE)
+			mov eax, p1.kickDir
+			add p1.legPos[ebx * sizeof Vec].x, eax
+		.endif
 
 		inc i
 	.endw
@@ -214,10 +220,10 @@ player2_reset proc
 player2_reset endp
 
 player2_resetSticks proc 
-	invoke vec_set, offset p2.stickPos[0 * sizeof Vec], STICK_0_X, 250
-	invoke vec_set, offset p2.stickPos[1 * sizeof Vec], STICK_1_X, 250
-	invoke vec_set, offset p2.stickPos[2 * sizeof Vec], STICK_2_X, 250
-	invoke vec_set, offset p2.stickPos[3 * sizeof Vec], STICK_3_X, 250
+	invoke vec_set, offset p2.stickPos[0 * sizeof Vec], WND_WIDTH-STICK_0_X, 250
+	invoke vec_set, offset p2.stickPos[1 * sizeof Vec], WND_WIDTH-STICK_1_X, 250
+	invoke vec_set, offset p2.stickPos[2 * sizeof Vec], WND_WIDTH-STICK_2_X, 250
+	invoke vec_set, offset p2.stickPos[3 * sizeof Vec], WND_WIDTH-STICK_3_X, 250
 	invoke memzero, addr p2.stickIsSelected, 4
 
 	ret
@@ -242,8 +248,9 @@ player2_resetFigs proc
 
 		; legPos[i] = figPos[i] + (LEG1_OFFSET_X, LEG1_OFFSET_Y)
 		invoke vec_cpy, addr p2.legPos[ebx * sizeof Vec], addr p2.figPos[ebx * sizeof Vec]
-		add p2.legPos[ebx * sizeof Vec].x, LEG1_OFFSET_X
-		add p2.legPos[ebx * sizeof Vec].y, LEG1_OFFSET_Y
+		mov ebx, i
+		add p2.legPos[ebx * sizeof Vec].x, LEG2_OFFSET_X
+		add p2.legPos[ebx * sizeof Vec].y, LEG2_OFFSET_Y
 
 		inc i
 	.endw
@@ -267,11 +274,11 @@ player2_draw proc
 	mov ebx, 0
 	.while (ebx<11)
 		.if (p2.color == PLAYER_COLOR_BLUE)
-			invoke renderTBitmap, sprites, p2.legPos[ebx * sizeof Vec].x, p2.legPos[ebx * sizeof Vec].y, SPR_BLUE_LEG1;leg
-			invoke renderTBitmap, sprites, p2.figPos[ebx * sizeof Vec].x, p2.figPos[ebx * sizeof Vec].y, SPR_BLUE_PLAYER1 ;figure
+			invoke renderTBitmap, sprites, p2.legPos[ebx * sizeof Vec].x, p2.legPos[ebx * sizeof Vec].y, SPR_BLUE_LEG2;leg
+			invoke renderTBitmap, sprites, p2.figPos[ebx * sizeof Vec].x, p2.figPos[ebx * sizeof Vec].y, SPR_BLUE_PLAYER2 ;figure
 		.else
-			invoke renderTBitmap, sprites, p2.legPos[ebx * sizeof Vec].x, p2.legPos[ebx * sizeof Vec].y, SPR_RED_LEG1;leg
-			invoke renderTBitmap, sprites, p2.figPos[ebx * sizeof Vec].x, p2.figPos[ebx * sizeof Vec].y, SPR_RED_PLAYER1 ;figure
+			invoke renderTBitmap, sprites, p2.legPos[ebx * sizeof Vec].x, p2.legPos[ebx * sizeof Vec].y, SPR_RED_LEG2;leg
+			invoke renderTBitmap, sprites, p2.figPos[ebx * sizeof Vec].x, p2.figPos[ebx * sizeof Vec].y, SPR_RED_PLAYER2 ;figure
 		.endif
 
 		inc ebx
