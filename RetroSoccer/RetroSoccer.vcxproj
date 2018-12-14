@@ -150,14 +150,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <MASM Include="AABB.asm" />
+    <MASM Include="Ball.asm" />
     <MASM Include="common.asm">
       <FileType>Document</FileType>
     </MASM>
+    <MASM Include="Player.asm" />
+    <MASM Include="Vec.asm" />
     <None Include="AABB.inc" />
+    <None Include="Ball.inc" />
     <None Include="common.inc" />
     <MASM Include="game.asm">
       <FileType>Document</FileType>
     </MASM>
+    <None Include="Player.inc" />
+    <None Include="SpriteConstants.inc" />
+    <None Include="Vec.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

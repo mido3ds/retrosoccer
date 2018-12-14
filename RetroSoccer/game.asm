@@ -1,5 +1,7 @@
 include common.inc
 include AABB.inc
+include SpriteConstants.inc
+include Vec.inc
 
 .CONST
 playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
@@ -35,23 +37,6 @@ LV1_BALL_SPD equ 3
 LV2_MATCH_TIME equ 80*1000
 LV2_BALL_SPD equ 7
 
-; sprite sheet info
-BKG_CLR equ 5a5754h
-SPR_PLAYER_HEIGHT equ 31
-SPR_PLAYER_WIDTH equ 21
-SPR_BALL_LEN equ 18
-SPR_LEG_WIDTH equ 19
-SPR_LEG_HEIGHT equ 13
-SPR_BLUE_PLAYER0 equ <59,0,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
-SPR_BLUE_PLAYER1 equ <38,0,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
-SPR_RED_PLAYER0 equ <59,31,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
-SPR_RED_PLAYER1 equ <38,31,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,BKG_CLR>
-SPR_BLUE_LEG0 equ <19,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
-SPR_BLUE_LEG1 equ <0,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
-SPR_RED_LEG0 equ <19,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
-SPR_RED_LEG1 equ <0,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,BKG_CLR>
-SPR_BALL equ <80,0,SPR_BALL_LEN,SPR_BALL_LEN,BKG_CLR>
-
 .DATA
 fieldFileName db "assets/field.bmp",0
 spritesFileName db "assets/spritesheet.bmp",0
@@ -76,8 +61,8 @@ lvl1BoxBB AABB <>
 lvl2BoxBB AABB <>
 
 ; ball
-ballPos vec <>
-ballSpd vec <>
+ballPos Vec <>
+ballSpd Vec <>
 
 ; first player
 firstPlayerScore uint32 0
@@ -152,7 +137,7 @@ onDestroy endp
 
 ; - game logic
 onUpdate proc t:uint32
-	.IF (screen == MAIN_SCREEN)
+	.if (screen == MAIN_SCREEN)
 		invoke aabb_pointInBB, lvl1BoxBB, mousePos
 		.if (eax == TRUE)
 			invoke isLeftMouseClicked
@@ -173,7 +158,7 @@ onUpdate proc t:uint32
 				mov screen, GAME_SCREEN
 			.endif
 		.endif
-	.ELSEIF (screen == GAME_SCREEN)
+	.elseif (screen == GAME_SCREEN)
 		call updateInput
 		call updateSticks
 		call updatePlayers
@@ -182,12 +167,12 @@ onUpdate proc t:uint32
 		mov eax, t
 		add elapsedTime, eax
 		mov eax, elapsedTime
-		.IF (eax >= matchTotalTime)
+		.if (eax >= matchTotalTime)
 			mov screen, GAME_OVER_SCREEN
-		.ENDIF
-	.ELSEIF (screen == GAME_OVER_SCREEN)
+		.endif
+	.elseif (screen == GAME_OVER_SCREEN)
 		
-	.ENDIF 
+	.endif 
 	
 	;debugging
 	printf 13, 0 ;remove last line
@@ -203,18 +188,18 @@ onUpdate endp
 
 ; - game rendering
 onDraw proc
-	.IF (screen == MAIN_SCREEN)
+	.if (screen == MAIN_SCREEN)
 		invoke renderBitmap, mainScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
-	.ELSEIF (screen == GAME_SCREEN)
+	.elseif (screen == GAME_SCREEN)
 		call drawField
 		call drawBall
 		call drawSticks
 		call drawPlayers
 		call writeScore
-	.ELSEIF (screen == GAME_OVER_SCREEN)
+	.elseif (screen == GAME_OVER_SCREEN)
 		invoke renderBitmap, gameOverScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 		call printFinalResult
-	.ENDIF
+	.endif
 
 	ret
 onDraw endp
@@ -222,30 +207,30 @@ onDraw endp
 drawFirstPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
-	.IF (firstPlayerColor == PLAYER_COLOR_BLUE)
+	.if (firstPlayerColor == PLAYER_COLOR_BLUE)
 		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_BLUE_LEG0;left leg
 		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_BLUE_LEG0;right leg
 		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_BLUE_PLAYER0 ;player
-	.ELSE
+	.else
 		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_RED_LEG0;left leg
 		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_RED_LEG0;right leg
 		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_RED_PLAYER0 ;player
-	.ENDIF
+	.endif
 	ret
 drawFirstPlayer endp
 
 drawSecPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
-	.IF (secPlayerColor == PLAYER_COLOR_BLUE)
+	.if (secPlayerColor == PLAYER_COLOR_BLUE)
 		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_BLUE_LEG1;left leg
 		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_BLUE_LEG1;right leg
 		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_BLUE_PLAYER1;player
-	.ELSE
+	.else
 		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_RED_LEG1;left leg
 		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_RED_LEG1;right leg
 		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_RED_PLAYER1;player
-	.ENDIF
+	.endif
 	ret
 drawSecPlayer endp
 
@@ -267,10 +252,10 @@ updateFirstLegsPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 
 	mov kick, 0
-	.IF (firstStickSelected[ebx] == TRUE)
+	.if (firstStickSelected[ebx] == TRUE)
 		push firstKick
 		pop kick
-	.ENDIF
+	.endif
 
 	mov ecx, firstPlayerX[eax *4]
 	mov edx, firstPlayerY[eax *4]
@@ -299,10 +284,10 @@ updateSecLegsPositions proc playerNumber:uint32
 	mov ebx, playerStick[eax *4]
 
 	mov kick, 0
-	.IF (secStickSelected[ebx] == TRUE)
+	.if (secStickSelected[ebx] == TRUE)
 		push secKick
 		pop kick
-	.ENDIF
+	.endif
 
 	mov ecx, secPlayerX[eax *4]
 	mov edx, secPlayerY[eax *4]
@@ -359,46 +344,46 @@ updateInput proc
 	; move sticks
 	invoke isKeyPressed, VK_Q
 	mov firstStickSelected[0], al
-	.IF (firstStickSelected[0] == TRUE)
+	.if (firstStickSelected[0] == TRUE)
 		inc numOfSelected
-	.ENDIF
+	.endif
 
 	invoke isKeyPressed, VK_W
 	mov firstStickSelected[1], al
-	.IF (firstStickSelected[1] == TRUE)
+	.if (firstStickSelected[1] == TRUE)
 		inc numOfSelected
-	.ENDIF
+	.endif
 
 	invoke isKeyPressed, VK_E
 	mov firstStickSelected[2], al
-	.IF (firstStickSelected[2] == TRUE)
+	.if (firstStickSelected[2] == TRUE)
 		inc numOfSelected
-		.IF (numOfSelected > 2)
+		.if (numOfSelected > 2)
 			dec numOfSelected
 			mov firstStickSelected[2], FALSE
-		.ENDIF
-	.ENDIF
+		.endif
+	.endif
 
 	invoke isKeyPressed, VK_R
 	mov firstStickSelected[3], al
-	.IF (firstStickSelected[3] == TRUE)
+	.if (firstStickSelected[3] == TRUE)
 		inc numOfSelected
-		.IF (numOfSelected > 2)
+		.if (numOfSelected > 2)
 			dec numOfSelected
 			mov firstStickSelected[3], FALSE
-		.ENDIF
-	.ENDIF
+		.endif
+	.endif
 
 	; kick
 	mov firstKick, 0
 	invoke isLeftMouseClicked
-	.IF (eax == TRUE)
+	.if (eax == TRUE)
 		mov firstKick, KICK_DEFAULT_DIST
-	.ENDIF
+	.endif
 	invoke isRightMouseClicked
-	.IF (eax == TRUE)
+	.if (eax == TRUE)
 		mov firstKick, -KICK_DEFAULT_DIST
-	.ENDIF
+	.endif
 
 	ret
 updateInput endp
@@ -407,29 +392,29 @@ updateSticks proc
 	local i:uint32
 
 	mov i, 0
-	.WHILE (i < 4)
+	.while (i < 4)
 		mov eax, i
-		.IF (firstStickSelected[eax] == TRUE)
+		.if (firstStickSelected[eax] == TRUE)
 			mov ebx, mousePos.y
 			mov firstStickY[eax *4], ebx
 
 			; upper
-			.IF (ebx > stickUpperLimit[eax *4])
+			.if (ebx > stickUpperLimit[eax *4])
 				; firstStickY[i] = stickUpperLimit[i]
 				push stickUpperLimit[eax *4]
 				pop firstStickY[eax *4]
-			.ENDIF
+			.endif
 
 			; lower 
-			.IF (ebx < stickLowerLimit[eax *4])
+			.if (ebx < stickLowerLimit[eax *4])
 				; firstStickY[i] = stickLowerLimit[i]
 				push stickLowerLimit[eax *4]
 				pop firstStickY[eax *4]
-			.ENDIF
-		.ENDIF
+			.endif
+		.endif
 
 		inc i
-	.ENDW
+	.endw
 
 	ret
 updateSticks endp
@@ -438,7 +423,7 @@ updatePlayers proc
 	local i:uint32
 
 	mov i, 0
-	.WHILE (i < 11)
+	.while (i < 11)
 		invoke updateFirstPlayersPositions, i
 		invoke updateFirstLegsPositions, i
 
@@ -446,43 +431,43 @@ updatePlayers proc
 		invoke updateSecLegsPositions, i
 
 		inc i
-	.ENDW
+	.endw
 
 	ret
 updatePlayers endp
 
 updateBall proc
-	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:vec
+	local ballBB:AABB, legBB:AABB, collided:bool, i:uint32, colDir:Vec
 	mov collided, FALSE
 	invoke aabb_calc, ballPos.x, ballPos.y, SPR_BALL_LEN, SPR_BALL_LEN, addr ballBB
 
 	; detect collision with goals
-	.IF (ballBB.y0 >= 175 && ballBB.y1 <= 325)
-		.IF (ballBB.x0 <= 11) ; left
+	.if (ballBB.y0 >= 175 && ballBB.y1 <= 325)
+		.if (ballBB.x0 <= 11) ; left
 			call resetSticks
 			inc secPlayerScore
 			invoke vec_set, addr ballPos, BALL_START_SEC
 			invoke vec_set, addr ballSpd, 0, 0
 			ret
-		.ELSEIF (ballBB.x1 >= 788) ; right
+		.elseif (ballBB.x1 >= 788) ; right
 			call resetSticks
 			inc firstPlayerScore
 			invoke vec_set, addr ballPos, BALL_START_FIRST
 			invoke vec_set, addr ballSpd, 0, 0
 			ret
-		.ENDIF
-	.ENDIF
+		.endif
+	.endif
 
 	; detect collision with walls
-	.IF (ballBB.y0 <= 9 || ballBB.y1 >= 490) ; up or down
+	.if (ballBB.y0 <= 9 || ballBB.y1 >= 490) ; up or down
 		invoke vec_negY, addr ballSpd
-	.ELSEIF (ballBB.x0 <= 9 || ballBB.x1 >= 790) ; left or right
+	.elseif (ballBB.x0 <= 9 || ballBB.x1 >= 790) ; left or right
 		invoke vec_negX, addr ballSpd
-	.ENDIF
+	.endif
 	
 	; detect collision with legs
 	mov i, 0
-	.WHILE (i < 11) 
+	.while (i < 11) 
 		; first legs
 		mov edx, i
 		invoke aabb_calc, firstLeftLegX[edx *4], firstLeftLegY[edx *4], SPR_LEG_WIDTH, SPR_LEG_HEIGHT*2, addr legBB
@@ -490,7 +475,7 @@ updateBall proc
 		mov edx, i
 		invoke aabb_collided, ballBB, legBB, addr colDir
 		mov collided, al
-		.BREAK .IF (eax == TRUE)
+		.break .if (eax == TRUE)
 
 		; sec legs
 		mov edx, i
@@ -499,15 +484,15 @@ updateBall proc
 		mov edx, i
 		invoke aabb_collided, ballBB, legBB, addr colDir
 		mov collided, al
-		.BREAK .IF (eax == TRUE)
+		.break .if (eax == TRUE)
 		
 		inc i	
-	.ENDW
+	.endw
 
-	.IF (collided == TRUE)
+	.if (collided == TRUE)
 		invoke vec_smul, ballSpeedScalar, addr colDir
 		invoke vec_cpy, addr ballSpd, addr colDir
-	.ENDIF
+	.endif
 
 	invoke vec_add, addr ballPos, addr ballSpd
 
@@ -520,29 +505,29 @@ drawSticks proc
 	local i:uint32
 
 	mov i, 0
-	.WHILE (i < 4)
-		.IF (firstPlayerColor == PLAYER_COLOR_BLUE)
+	.while (i < 4)
+		.if (firstPlayerColor == PLAYER_COLOR_BLUE)
 			invoke setPen, bluePen
-		.ELSE
+		.else
 			invoke setPen, redPen
-		.ENDIF
+		.endif
 		mov edx, i
 		mov eax, SPR_PLAYER_WIDTH/2
 		add eax, firstStickX[edx *4]
 		invoke drawLine, eax, 0, eax, WND_HEIGHT
 
-		.IF (secPlayerColor == PLAYER_COLOR_BLUE)
+		.if (secPlayerColor == PLAYER_COLOR_BLUE)
 			invoke setPen, bluePen
-		.ELSE
+		.else
 			invoke setPen, redPen
-		.ENDIF
+		.endif
 		mov edx, i
 		mov eax, SPR_PLAYER_WIDTH/2
 		add eax, secStickX[edx *4]
 		invoke drawLine, eax, 0, eax, WND_HEIGHT
 
 		inc i
-	.ENDW
+	.endw
 
 	ret
 drawSticks endp
@@ -551,11 +536,11 @@ drawPlayers proc
 	local i:uint32
 
 	mov i, 0
-	.WHILE (i < 11)
+	.while (i < 11)
 		invoke drawFirstPlayer, i
 		invoke drawSecPlayer, i
 		inc i
-	.ENDW
+	.endw
 
 	ret
 drawPlayers endp

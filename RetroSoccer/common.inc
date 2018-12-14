@@ -3,9 +3,12 @@ COMMON_INC=1
 
 .xmm
 ifndef MODEL_TAG
+MODEL_TAG=1
 .model flat, stdcall
 endif ;MODEL_TAG
 option casemap:none
+
+include Vec.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							constants								   ;;
@@ -42,21 +45,8 @@ float typedef real4 ; 1.18*e–38 : 3.40*e38
 double typedef real8 ; 2.23*e–308 : 1.79*e308
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							vectors  								   ;;
+;;							random  								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-vec STRUCT
-	x int32 ?
-	y int32 ?
-vec ENDS
-
-vec_add proto dest:ptr vec, b:ptr vec
-vec_negX proto v:ptr vec
-vec_negY proto v:ptr vec
-vec_neg proto v:ptr vec
-vec_smul proto s:uint32, v:ptr vec
-vec_cpy proto dest:ptr vec, src:ptr vec
-vec_set proto v:ptr vec, x:int32, y:int32
 
 ; simple pseudo-random number generator (32 bit)
 ; implements "linear congruential generator" algorithm
@@ -613,7 +603,7 @@ getCharInput proto
 
 ifndef EXCLUDE_EXTERNS
 	; - mouse position variables updated every time mouse moves
-	extern mousePos:vec
+	extern mousePos:Vec
 endif
 
 ; eax=TRUE|FALSE

@@ -22,7 +22,7 @@ onDraw proto
 
 ; public
 .DATA?
-mousePos vec <>
+mousePos Vec <>
 public mousePos
 
 ; private
@@ -105,37 +105,37 @@ start proc
 	mov __randSeed, eax
 	invoke SetTimer, __mainWnd, UPDATE_TIMER_ID, UPDATE_TIME_MILIS, offset timerCallback
 
-	.WHILE TRUE      
+	.while TRUE      
 		invoke GetMessage, addr msg, NULL, 0, 0 
-		.BREAK .IF (!eax) 
+		.break .if (!eax) 
 		invoke TranslateMessage, addr msg 
 		invoke DispatchMessage, addr msg
-	.ENDW	   
+	.endw	   
 
 	invoke ExitProcess, msg.wParam                      
 start endp
 ;}
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM 
-	.IF uMsg==WM_CREATE
+	.if uMsg==WM_CREATE
 		invoke onCreate
-    .ELSEIF uMsg==WM_DESTROY   
+    .elseif uMsg==WM_DESTROY   
 		invoke KillTimer, __mainWnd, UPDATE_TIMER_ID
 		invoke onDestroy                        
         invoke PostQuitMessage, NULL  		
-	.ELSEIF uMsg==WM_ERASEBKGND 
+	.elseif uMsg==WM_ERASEBKGND 
 		mov eax, 1
 		ret
-	.ELSEIF uMsg==WM_MOUSEMOVE
+	.elseif uMsg==WM_MOUSEMOVE
 		invoke GetCursorPos, addr mousePos
 		invoke ScreenToClient, __mainWnd, addr mousePos
 	.elseif uMsg==WM_CHAR
 		push wParam
 		pop __charInput
-    .ELSE 
+    .else
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
         ret 
-    .ENDIF 
+    .endif 
 
     xor eax, eax 
     ret 
@@ -215,23 +215,23 @@ memset proc dest:pntr, data:byte, len:uint32
 	mov al, data
 	mov ebx, dest
 
-	.WHILE TRUE
-		.BREAK .IF (len==0)
+	.while TRUE
+		.break .if (len==0)
 		mov byte ptr [ebx], al	
 		inc ebx
 		dec len
-	.ENDW
+	.endw
 
 	ret
 memset endp
 
 memzero proc dest:pntr, len:uint32
-	.WHILE TRUE
-		.BREAK .IF (len==0)
+	.while TRUE
+		.break .if (len==0)
 		mov byte ptr [dest], 0
 		inc dest
 		dec len
-	.ENDW
+	.endw
 	ret
 memzero endp
 
@@ -247,10 +247,10 @@ open endp
 
 readAll proc fileName:ptr char
     invoke open, fileName
-	.IF (!eax) 
+	.if (!eax) 
 		mov eax, FAIL
 		ret
-	.ENDIF
+	.endif
 
 	;invoke ;TODO
     ret
@@ -258,10 +258,10 @@ readAll endp
 
 writeAll proc fileName:ptr char, buffer:ptr byte, len:uint32
 	invoke open, fileName
-	.IF (!eax) 
+	.if (!eax) 
 		mov eax, FAIL
 		ret
-	.ENDIF
+	.endif
 
     ;TODO
     ret
@@ -551,84 +551,6 @@ clearScreen proc color:Color
 	invoke DeleteObject, br
 	ret
 clearScreen endp
-
-vec_smul proc s:uint32, v:ptr vec
-	mov ebx, v
-	assume ebx:ptr vec
-	
-	mov ecx, s
-
-	mov eax, [ebx].x
-	imul ecx
-	mov [ebx].x, eax
-
-	mov eax, [ebx].y
-	imul ecx
-	mov [ebx].y, eax
-
-	ret
-vec_smul endp
-
-vec_cpy proc dest:ptr vec, src:ptr vec
-	mov eax, src
-	mov ebx, dest
-	assume eax:ptr vec
-	assume ebx:ptr vec
-
-	push [eax].x
-	pop [ebx].x
-	push [eax].y
-	pop [ebx].y
-
-	ret
-vec_cpy endp
-
-vec_set proc v:ptr vec, x:int32, y:int32
-	mov eax, v
-	assume eax:ptr vec
-	
-	push x
-	pop [eax].x
-	push y
-	pop [eax].y
-
-	ret
-vec_set endp
-
-vec_add proc dest:ptr vec, b:ptr vec
-	mov eax, b
-	assume eax:ptr vec
-	mov ebx, [eax].x
-	mov ecx, [eax].y
-	
-	mov eax, dest
-	assume eax:ptr vec
-	add [eax].x, ebx
-	add [eax].y, ecx
-	ret
-vec_add endp
-
-vec_negX proc v:ptr vec
-	mov eax, v
-	assume eax:ptr vec
-	neg [eax].x
-	ret
-vec_negX endp
-
-vec_negY proc v:ptr vec
-	mov eax, v
-	assume eax:ptr vec
-	neg [eax].y
-	ret
-vec_negY endp
-
-vec_neg proc v:ptr vec
-	mov eax, v
-	assume eax:ptr vec
-	neg [eax].x
-	neg [eax].y
-	ret
-vec_neg endp
 
 RAND_A equ 1103515245
 RAND_B equ 12345
