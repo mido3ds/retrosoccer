@@ -7,8 +7,8 @@ figure_update proto f:ptr Figure, kick:int32
 figure_send proto f:ptr Figure
 figure_recv proto f:ptr Figure
 
-stick_init proto s:ptr Stick, player:ptr Player
-stick_draw proto s:ptr Stick, sprites:Bitmap, color:uint32
+stick_init proto s:ptr Stick, onLeft:bool, stickNum:uint32
+stick_draw proto s:ptr Stick
 stick_update proto s:ptr Stick
 stick_send proto s:ptr Stick
 stick_recv proto s:ptr Stick
@@ -29,9 +29,14 @@ figOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
 figStickNum uint32 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
 stickUpperLimit uint32 472, 400, 306, 348
 stickLowerLimit uint32 25, 98, 194, 150
-leftStickX uint32 39, 168, 336, 534
-rightStickX uint32 761, 632, 464, 266
+stickX uint32 39, 168, 336, 534
+
+KICK_DEFAULT_DIST equ 8
+
 .data
+extern bluePen:Pen
+extern redPen:Pen
+
 .data?
 .code
 player_asm:
@@ -94,7 +99,7 @@ player_init proc b:ptr Player, color:uint32, onLeft:bool
 	lea ebx, [eax].sticks[0]
 	.while (i < 4)
 		push ebx
-		invoke stick_init, ebx, b
+		invoke stick_init, ebx, onLeft, i
 
 		pop ebx
 		add ebx, sizeof Stick
@@ -138,12 +143,19 @@ player_draw proc b:ptr Player, sprites:Bitmap
 	mov bl, [eax].onLeft
 	mov onLeft, bl
 
+	; set pen color
+	.if (color == PLAYER_COLOR_RED)
+		invoke setPen, redPen
+	.else
+		invoke setPen, bluePen
+	.endif
+
 	; sticks
 	mov i, 0
 	lea eax, [eax].sticks[0]
 	.while (i < 4)
 		push eax
-		invoke stick_draw, eax, sprites, color
+		invoke stick_draw, eax
 		pop eax
 
 		add eax, sizeof Stick
@@ -166,6 +178,59 @@ player_draw proc b:ptr Player, sprites:Bitmap
 
     ret
 player_draw endp
+
+updateInput proc p:ptr Player
+	local numOfSelected:uint32, stickSelected[4]:bool
+	mov numOfSelected, 0
+
+	; get selected sticks
+	invoke isKeyPressed, VK_Q
+	mov stickSelected[0], al
+	.if (stickSelected[0] == TRUE)
+		inc numOfSelected
+	.endif
+
+	invoke isKeyPressed, VK_W
+	mov stickSelected[1], al
+	.if (stickSelected[1] == TRUE)
+		inc numOfSelected
+	.endif
+
+	invoke isKeyPressed, VK_E
+	mov stickSelected[2], al
+	.if (stickSelected[2] == TRUE)
+		inc numOfSelected
+		.if (numOfSelected > 2)
+			dec numOfSelected
+			mov stickSelected[2], FALSE
+		.endif
+	.endif
+
+	invoke isKeyPressed, VK_R
+	mov stickSelected[3], al
+	.if (stickSelected[3] == TRUE)
+		inc numOfSelected
+		.if (numOfSelected > 2)
+			dec numOfSelected
+			mov stickSelected[3], FALSE
+		.endif
+	.endif
+
+	; get kick
+	mov ebx, p
+	assume ebx:ptr Player
+	mov [ebx].kick, 0
+	invoke isLeftMouseClicked
+	.if (eax == TRUE)
+		mov [ebx].kick, KICK_DEFAULT_DIST
+	.endif
+	invoke isRightMouseClicked
+	.if (eax == TRUE)
+		mov [ebx].kick, -KICK_DEFAULT_DIST
+	.endif
+
+	ret
+updateInput endp
 
 player_update proc b:ptr Player
 	local i:uint32, kick:int32
@@ -323,13 +388,35 @@ figure_recv proc f:ptr Figure
 figure_recv endp
 
 
-stick_init proc s:ptr Stick, player:ptr Player
-    
+stick_init proc s:ptr Stick, onLeft:bool, stickNum:uint32
+    mov eax, s
+	assume eax:ptr Stick
+	
+	; s.y = 250
+	mov [eax].pos.y, WND_HEIGHT/2
+
+	; s.x = stickX[stickNum]
+	mov ebx, stickNum
+	mov ebx, stickX[ebx * sizeof uint32]
+	.if (onLeft==FALSE)
+		sub ebx, WND_WIDTH
+		neg ebx
+	.endif
+	add ebx, SPR_PLAYER_WIDTH/2
+	mov [eax].pos.x, ebx
+
+	; s.selected = FALSE
+	mov [eax].selected, FALSE
+
     ret
 stick_init endp
 
-stick_draw proc s:ptr Stick, sprites:Bitmap, color:uint32
-    
+stick_draw proc s:ptr Stick
+	mov eax, s
+	assume eax:ptr Stick
+	mov eax, [eax].pos.x
+
+    invoke drawLine, eax, 0, eax, WND_HEIGHT
     ret
 stick_draw endp
 

@@ -48,6 +48,8 @@ mainScreenBmp Bitmap ?
 gameOverScreenBmp Bitmap ?
 bluePen Pen ?
 redPen Pen ?
+public bluePen
+public redPen
 elapsedTime uint32 0
 
 screen uint32 MAIN_SCREEN
@@ -110,7 +112,7 @@ onCreate proc
 
 	invoke createPen, 3, 0ff0000h ;blue
 	mov bluePen, eax
-	invoke createPen, 3, 0000ffh ;sec
+	invoke createPen, 3, 0000ffh ;red
 	mov redPen, eax
 
 	mov lvl1BoxBB.x0, 313
