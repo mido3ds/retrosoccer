@@ -1,41 +1,34 @@
 ifndef PLAYER_INC
 PLAYER_INC=1
 include common.inc
-include Vec.inc
-include AABB.inc
-
-PLAYER_COLOR_BLUE equ 0
-PLAYER_COLOR_RED equ 1
-
-Stick struct
-	pos Vec <>
-	selected bool ?
-Stick ends
-
-Figure struct
-	pos Vec <>
-	legBB AABB <>
-	stick pntr ? ; ptr stick
-	offsetY int32 ?
-Figure ends
 
 Player struct
+	name db 20 dup(0) 
 	score uint32 ?
 	color uint32 ?
-	sticks Stick 4 dup(<>)
-	figs Figure 11 dup(<>)
-	kick int32 ?
-	onLeft bool ? ; wether player on left side or not
+	kickDir int32 ?
+
+	; sticks
+	stickPos Vec 4 dup(<>)
+	stickIsSelected bool 4 dup(FALSE)
+
+	; figures
+	figPos Vec 11 dup(<>)
+	legPos Vec 11 dup(<>)
 Player ends
 
-player_init proto b:ptr Player, color:uint32, onLeft:bool
-player_draw proto b:ptr Player, sprites:Bitmap
-player_update proto b:ptr Player
-player_send proto p:ptr Player
-player_recv proto p:ptr Player
+ifndef EXCLUDE_EXTERNS
+	extern p1:Player
+	extern p2:Player
+endif ;EXCLUDE_EXTERNS
 
-player_getFigStick proto p:ptr Player, figNum:uint32
-player_getFig proto p:ptr Player, i:uint32
-player_getStick proto p:ptr Player, i:uint32
+player1_reset proto 
+player1_draw proto 
+player1_update proto 
+player1_send proto 
+
+player2_reset proto 
+player2_draw proto
+player2_recv proto
 
 endif

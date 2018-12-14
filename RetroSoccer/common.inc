@@ -8,8 +8,6 @@ MODEL_TAG=1
 endif ;MODEL_TAG
 option casemap:none
 
-include Vec.inc
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							constants								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,6 +21,49 @@ endif
 
 WND_WIDTH    equ	800
 WND_HEIGHT   equ	500 
+
+MAIN_SCREEN equ 0
+GAME_SCREEN equ 1
+GAME_OVER_SCREEN equ 2
+
+BALL_START_FIRST equ <358,245>
+BALL_START_SEC equ <442,243>
+RED_PLAYER_MOVING_DISTANCE equ 7
+KICK_DEFAULT_DIST equ 8
+PLAYER_COLOR_BLUE equ 0
+PLAYER_COLOR_RED equ 1
+
+STICK_0_X equ 49
+STICK_1_X equ 178
+STICK_2_X equ 346
+STICK_3_X equ 544
+
+LEG1_OFFSET_X equ +2
+LEG1_OFFSET_Y equ +4
+LEG2_OFFSET_X equ -1
+LEG2_OFFSET_Y equ +4
+
+LV1_MATCH_TIME equ 120*1000
+LV1_BALL_SPD equ 3
+LV2_MATCH_TIME equ 80*1000
+LV2_BALL_SPD equ 7
+
+; sprite sheet info
+SPR_BKG_CLR equ 5a5754h
+SPR_PLAYER_HEIGHT equ 31
+SPR_PLAYER_WIDTH equ 21
+SPR_BALL_LEN equ 18
+SPR_LEG_WIDTH equ 19
+SPR_LEG_HEIGHT equ 13*2
+SPR_BLUE_PLAYER1 equ <59,0,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,SPR_BKG_CLR>
+SPR_BLUE_PLAYER2 equ <38,0,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,SPR_BKG_CLR>
+SPR_RED_PLAYER1 equ <59,31,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,SPR_BKG_CLR>
+SPR_RED_PLAYER2 equ <38,31,SPR_PLAYER_WIDTH,SPR_PLAYER_HEIGHT,SPR_BKG_CLR>
+SPR_BLUE_LEG1 equ <19,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
+SPR_BLUE_LEG2 equ <0,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
+SPR_RED_LEG1 equ <19,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
+SPR_RED_LEG2 equ <0,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
+SPR_BALL equ <80,0,SPR_BALL_LEN,SPR_BALL_LEN,SPR_BKG_CLR>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							types   								   ;;
@@ -43,6 +84,39 @@ uint64 typedef qword ; 0 : 18,446,744,073,709,551,615
 
 float typedef real4 ; 1.18*e–38 : 3.40*e38
 double typedef real8 ; 2.23*e–308 : 1.79*e308
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Vector 2d   							   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Vec STRUCT
+	x int32 ?
+	y int32 ?
+Vec ENDS
+
+vec_add proto dest:ptr Vec, b:ptr Vec
+vec_negX proto v:ptr Vec
+vec_negY proto v:ptr Vec
+vec_neg proto v:ptr Vec
+vec_smul proto s:uint32, v:ptr Vec
+vec_cpy proto dest:ptr Vec, src:ptr Vec
+vec_set proto v:ptr Vec, x:int32, y:int32
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							BoundingBox  							   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+AABB STRUCT
+	x0 uint32 ?
+	y0 uint32 ?
+	x1 uint32 ?
+	y1 uint32 ?
+AABB ENDS
+
+aabb_zero proto a:ptr AABB
+aabb_calc proto x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
+aabb_pointInBB proto a:AABB, p:Vec
+aabb_collided proto a:AABB, b:AABB, collisionDir:ptr Vec
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							random  								   ;;

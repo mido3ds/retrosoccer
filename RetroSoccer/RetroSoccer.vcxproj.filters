@@ -14,19 +14,10 @@
     <None Include="common.inc">
       <Filter>Include Files</Filter>
     </None>
-    <None Include="AABB.inc">
-      <Filter>Include Files</Filter>
-    </None>
     <None Include="Ball.inc">
       <Filter>Include Files</Filter>
     </None>
     <None Include="Player.inc">
-      <Filter>Include Files</Filter>
-    </None>
-    <None Include="SpriteConstants.inc">
-      <Filter>Include Files</Filter>
-    </None>
-    <None Include="Vec.inc">
       <Filter>Include Files</Filter>
     </None>
   </ItemGroup>
@@ -37,13 +28,7 @@
     <MASM Include="game.asm">
       <Filter>Assembly Files</Filter>
     </MASM>
-    <MASM Include="AABB.asm">
-      <Filter>Assembly Files</Filter>
-    </MASM>
     <MASM Include="Player.asm">
-      <Filter>Assembly Files</Filter>
-    </MASM>
-    <MASM Include="Vec.asm">
       <Filter>Assembly Files</Filter>
     </MASM>
     <MASM Include="Ball.asm">

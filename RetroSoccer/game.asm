@@ -1,9 +1,8 @@
 include common.inc
-include AABB.inc
-include SpriteConstants.inc
-include Vec.inc
 
-.CONST
+public bluePen, redPen, sprites
+
+.const
 playerOffsetY int32 0-SPR_PLAYER_HEIGHT/2, ;s0
 		-74-SPR_PLAYER_HEIGHT/2, ;s1
 		+74-SPR_PLAYER_HEIGHT/2, 
@@ -21,37 +20,20 @@ stickLowerLimit uint32 25, 98, 194, 150
 firstStickX uint32 39, 168, 336, 534
 secStickX uint32 761, 632, 464, 266
 
-MAIN_SCREEN equ 0
-GAME_SCREEN equ 1
-GAME_OVER_SCREEN equ 2
-
-BALL_START_FIRST equ <358,245>
-BALL_START_SEC equ <442,243>
-RED_PLAYER_MOVING_DISTANCE equ 7
-KICK_DEFAULT_DIST equ 8
-PLAYER_COLOR_BLUE equ 0
-PLAYER_COLOR_RED equ 1
-
-LV1_MATCH_TIME equ 120*1000
-LV1_BALL_SPD equ 3
-LV2_MATCH_TIME equ 80*1000
-LV2_BALL_SPD equ 7
-
-.DATA
 fieldFileName db "assets/field.bmp",0
 spritesFileName db "assets/spritesheet.bmp",0
 mainScreenFileName db "assets/mainScreen.bmp",0
 gameOverScreenFileName db "assets/gameOverScreen.bmp",0
+
+.data
 field Bitmap ?
 sprites Bitmap ?
 mainScreenBmp Bitmap ?
 gameOverScreenBmp Bitmap ?
 bluePen Pen ?
 redPen Pen ?
-public bluePen
-public redPen
-elapsedTime uint32 0
 
+elapsedTime uint32 0
 screen uint32 MAIN_SCREEN
 
 level uint32 1
@@ -93,7 +75,7 @@ secRightLegY uint32 11 dup(?)
 secKick int32 0
 secMovingUpDist int32 0
 
-.CODE
+.code
 game_asm:
 
 ; - called before window is shown
@@ -210,13 +192,13 @@ drawFirstPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
 	.if (firstPlayerColor == PLAYER_COLOR_BLUE)
-		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_BLUE_LEG0;left leg
-		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_BLUE_LEG0;right leg
-		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_BLUE_PLAYER0 ;player
+		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_BLUE_LEG1;left leg
+		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_BLUE_LEG1;right leg
+		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_BLUE_PLAYER1 ;player
 	.else
-		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_RED_LEG0;left leg
-		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_RED_LEG0;right leg
-		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_RED_PLAYER0 ;player
+		invoke renderTBitmap, sprites, firstLeftLegX[ebx *4], firstLeftLegY[ebx *4], SPR_RED_LEG1;left leg
+		invoke renderTBitmap, sprites, firstRightLegX[ebx *4], firstRightLegY[ebx *4], SPR_RED_LEG1;right leg
+		invoke renderTBitmap, sprites, firstPlayerX[ebx *4], firstPlayerY[ebx *4], SPR_RED_PLAYER1 ;player
 	.endif
 	ret
 drawFirstPlayer endp
@@ -225,13 +207,13 @@ drawSecPlayer proc playerNumber:uint32
 	mov ebx, playerNumber
 
 	.if (secPlayerColor == PLAYER_COLOR_BLUE)
-		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_BLUE_LEG1;left leg
-		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_BLUE_LEG1;right leg
-		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_BLUE_PLAYER1;player
+		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_BLUE_LEG2;left leg
+		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_BLUE_LEG2;right leg
+		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_BLUE_PLAYER2;player
 	.else
-		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_RED_LEG1;left leg
-		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_RED_LEG1;right leg
-		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_RED_PLAYER1;player
+		invoke renderTBitmap, sprites, secLeftLegX[ebx *4], secLeftLegY[ebx *4], SPR_RED_LEG2;left leg
+		invoke renderTBitmap, sprites, secRightLegX[ebx *4], secRightLegY[ebx *4], SPR_RED_LEG2;right leg
+		invoke renderTBitmap, sprites, secPlayerX[ebx *4], secPlayerY[ebx *4], SPR_RED_PLAYER2;player
 	.endif
 	ret
 drawSecPlayer endp
