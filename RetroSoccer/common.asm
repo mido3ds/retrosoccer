@@ -389,7 +389,7 @@ openConnection proc
 	local portDcb:DCB, portTimeouts:COMMTIMEOUTS
 
 	.const
-	_oc_fileName db "COM%i",0
+	_oc_fileName db "\\.\COM%i",0
 	.data?
 	_oc_buf db 5 dup(0)
 	.code
@@ -441,11 +441,11 @@ openConnection proc
 
 	; timeout configuration
 	invoke GetCommTimeouts, __portHndl, addr portTimeouts
-	mov portTimeouts.ReadIntervalTimeout, 50 
-	mov portTimeouts.ReadTotalTimeoutConstant, 50 
-	mov portTimeouts.ReadTotalTimeoutMultiplier, 10
-	mov portTimeouts.WriteTotalTimeoutMultiplier, 10
-	mov portTimeouts.WriteTotalTimeoutConstant, 50 
+	mov portTimeouts.ReadIntervalTimeout, 10;TODO choose correct timeout
+	mov portTimeouts.ReadTotalTimeoutConstant, 10
+	mov portTimeouts.ReadTotalTimeoutMultiplier, 1
+	mov portTimeouts.WriteTotalTimeoutMultiplier, 1
+	mov portTimeouts.WriteTotalTimeoutConstant, 10
 	invoke SetCommTimeouts, __portHndl, addr portTimeouts
 	.if (eax == 0)
 		invoke CloseHandle, __portHndl
@@ -473,15 +473,38 @@ closeConnection proc
     ret
 closeConnection endp
 
-send proc buffer:ptr byte, len:uint32
-    ;TODO
+send proc buffer:ptr byte, n:uint32
+    local numBytes:uint32
+	invoke WriteFile, __portHndl, buffer, n, addr numBytes, NULL
+	mov eax, numBytes
     ret
 send endp
 
-recv proc buffer:ptr byte, len:uint32
-    ;TODO
+recv proc buffer:ptr byte, n:uint32
+	local numBytesRead:uint32, allBytes:uint32
+	mov eax, n
+	mov allBytes, eax
+
+    .while n > 0
+		invoke ReadFile, __portHndl, buffer, n, addr numBytesRead, NULL
+		.break .if numBytesRead == 0
+
+		mov eax, numBytesRead
+		sub n, eax
+		add buffer, eax
+	.endw
+
+	mov ebx, n
+	mov eax, allBytes
+	sub eax, ebx
     ret
 recv endp
+
+waitConnEvent proc event:dword
+	invoke SetCommMask, __portHndl, event
+	invoke WaitCommEvent , __portHndl, addr event, NULL
+	ret
+waitConnEvent endp
 
 ; eax = handle to bitmap|NULL
 loadBitmap proc fileName:ptr char

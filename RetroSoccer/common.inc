@@ -725,12 +725,18 @@ opeConnection proto
 ; eax = TRUE|FALSE
 closeConnection proto
 
-; - send `len` bytes in buffer to other end
-; eax=SUCCESS|FAIL
-send proto buffer:ptr byte, len:uint32
+; blocks until event happens
+; events: EV_BREAK, EV_CTS, EV_DSR, EV_ERR, EV_RING, EV_RLSD, EV_RXCHAR, EV_RXFLAG, EV_TXEMPTY
+; for more info: https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-waitcommevent
+waitConnEvent proto event:dword
 
-; - recv no more than `len` bytes in buffer from the other end
-; eax=received bytes|FAIL
-recv proto buffer:ptr byte, len:uint32
+; - send `n` bytes of `buffer`
+; eax=num of bytes sent
+; eax=SUCCESS|FAIL
+send proto buffer:ptr byte, n:uint32
+
+; - recieve and stores `n` bytes to `buffer` 
+; eax=num of bytes received
+recv proto buffer:ptr byte, n:uint32
 
 endif ;COMMON_INC
