@@ -19,6 +19,9 @@ ifndef SUCCESS
 SUCCESS equ		0
 endif
 
+FIRST_PLAYER_PORT equ 1
+SECOND_PLAYER_PORT equ 2
+
 WND_WIDTH    equ	800
 WND_HEIGHT   equ	500 
 
@@ -713,17 +716,14 @@ pauseAudio proto
 stopAudio proto
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							network  								   ;;
+;;							Communication  							   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; eax = SUCCESS|FAILURE
-connectToPort proto portNum:uint32
+opeConnection proto 
 
-; eax=TRUE|FALSE
-isConnected proto
-
-; eax = SUCCESS|FAILURE
-disconnect proto
+; eax = TRUE|FALSE
+closeConnection proto
 
 ; - send `len` bytes in buffer to other end
 ; eax=SUCCESS|FAIL

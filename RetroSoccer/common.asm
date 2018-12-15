@@ -23,11 +23,6 @@ onDestroy proto
 onUpdate proto t:uint32
 onDraw proto
 
-; public
-.DATA?
-mousePos Vec <>
-
-; private
 .CONST
 UPDATE_TIME_MILIS equ 1000/100
 UPDATE_TIMER_ID equ 1
@@ -36,7 +31,8 @@ CONOUT char "CONOUT$",0
 MAIN_CLASS_NAME char "MainWindowClass",0
 APP_NAME db "RetroSoccer",0  
 
-.DATA?           
+.DATA?    
+mousePos Vec <>       
 __programInst HINSTANCE ?        
 __processHeap uint32 ?
 __stdout uint32 ?
@@ -47,6 +43,8 @@ __hdcTemp HDC ?
 __lastTickCount uint32 ?
 __randSeed uint32 ?
 __charInput uint32 ?
+__portNum uint32 ?
+__portHndl HANDLE ?
 
 .CODE
 start proc
@@ -64,6 +62,8 @@ start proc
 	mov __stdout, eax
 	mov mousePos.x, 0
 	mov mousePos.y, 0
+
+	call openConnection
 
 	mov   wc.cbSize, SIZEOF WNDCLASSEX                   
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
@@ -151,8 +151,12 @@ createAnotherProcess proc
 		.endif
 		invoke CloseHandle, pi.hProcess 
 		invoke CloseHandle, pi.hThread
+
+		mov __portNum, FIRST_PLAYER_PORT
+		ret
 	.endif
 
+	mov __portNum, SECOND_PLAYER_PORT
 	ret
 createAnotherProcess endp
 
@@ -161,7 +165,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke onCreate
     .elseif uMsg==WM_DESTROY   
 		invoke KillTimer, __mainWnd, UPDATE_TIMER_ID
-		invoke onDestroy                        
+		invoke onDestroy      
+		invoke closeConnection                  
         invoke PostQuitMessage, NULL  		
 	.elseif uMsg==WM_ERASEBKGND 
 		mov eax, 1
@@ -380,15 +385,93 @@ stopAudio proc
     ret
 stopAudio endp
 
-isConnected proc
-    ;TODO
-    ret
-isConnected endp
+openConnection proc 
+	local portDcb:DCB, portTimeouts:COMMTIMEOUTS
 
-disconnect proc
-    ;TODO
+	.const
+	_oc_fileName db "COM%i",0
+	.data?
+	_oc_buf db 5 dup(0)
+	.code
+	invoke sprintf, offset _oc_buf, offset _oc_fileName, __portNum
+
+	; open port
+	invoke CreateFile, offset _oc_buf, GENERIC_READ or GENERIC_WRITE,\
+						0, NULL, OPEN_EXISTING,\
+						FILE_ATTRIBUTE_NORMAL, \                    
+			            NULL
+	mov __portHndl, eax
+	.if (__portHndl == INVALID_HANDLE_VALUE)
+		mov eax, FAIL
+		ret
+	.endif
+	printfln ">> port opening: SUCCESS",0
+
+	; port configuration
+	mov portDcb.DCBlength, sizeof DCB
+	invoke GetCommState, __portHndl, addr portDcb
+	mov portDcb.BaudRate, CBR_256000		   	  ; baud rate
+	mov portDcb.ByteSize, 8				   		  ; byte size 
+	mov portDcb.Parity, ODDPARITY		   		  ; parity bit
+	mov portDcb.StopBits, TWOSTOPBITS      		  ; stop bits    
+	       		  
+	mov portDcb.fbits, BITRECORD <NULL, FALSE, RTS_CONTROL_ENABLE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, DTR_CONTROL_ENABLE, FALSE, TRUE, TRUE, TRUE>
+	; <NULL,\  ; fDummy2:17
+	; FALSE,\ ; fAbortOnError:1			; Do not abort reads/writes on error		
+	; RTS_CONTROL_ENABLE,\   				; fRtsControl:2 ; RTS flow control 
+	; FALSE,\ ; fNull:1					; Disable null stripping     
+	; FALSE,\ ; fErrorChar:1				; Disable error replacement 
+	; FALSE,\ ; fInX:1     				; No XON/XOFF in flow control 
+	; FALSE,\ ; fOutX:1    				; No XON/XOFF out flow control    
+	; TRUE,\ ; fTXContinueOnXoff:1		; XOFF continues Tx 
+	; FALSE,\ ; fDsrSensitivity:1			; DSR sensitivity 
+	; DTR_CONTROL_ENABLE,\; fDtrControl:2 ; DTR flow control type  
+	; FALSE,\ ; fOutxDsrFlow:1			; No DSR output flow control 
+	; TRUE,\ ; fOutxCtsFlow:1				; CTS output flow control 
+	; TRUE,\  ; fParity:1					; Enable parity checking 
+	; TRUE>   ; fBinary:1					; Binary mode no EOF check
+
+	invoke SetCommState, __portHndl, addr portDcb
+	.if (eax == 0)
+		invoke CloseHandle, __portHndl
+		mov eax, FAIL
+		ret
+	.endif
+	printfln ">> port configuration: SUCCESS", offset _oc_buf
+
+	; timeout configuration
+	invoke GetCommTimeouts, __portHndl, addr portTimeouts
+	mov portTimeouts.ReadIntervalTimeout, 50 
+	mov portTimeouts.ReadTotalTimeoutConstant, 50 
+	mov portTimeouts.ReadTotalTimeoutMultiplier, 10
+	mov portTimeouts.WriteTotalTimeoutMultiplier, 10
+	mov portTimeouts.WriteTotalTimeoutConstant, 50 
+	invoke SetCommTimeouts, __portHndl, addr portTimeouts
+	.if (eax == 0)
+		invoke CloseHandle, __portHndl
+		mov eax, FAIL
+		ret
+	.endif
+	printfln ">> timout configuration: SUCCESS",0
+
+	; clean port
+	invoke PurgeComm, __portHndl, PURGE_TXCLEAR or PURGE_RXCLEAR
+	.if (eax == 0)
+		invoke CloseHandle, __portHndl
+		mov eax, FAIL
+		ret
+	.endif
+	printfln ">> clean port: SUCCESS",0
+	printfln ">> listening on port COM%i", __portNum
+
+	mov eax, SUCCESS
+	ret
+openConnection endp
+
+closeConnection proc
+    invoke CloseHandle, __portHndl
     ret
-disconnect endp
+closeConnection endp
 
 send proc buffer:ptr byte, len:uint32
     ;TODO
