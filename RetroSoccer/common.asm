@@ -16,6 +16,7 @@ getTitleHeight proto
 prepareBuffers proto
 swapBuffers proto
 timerCallback proto	hwnd:HWND, msg:UINT, idTimer:UINT, dwTime:DWORD	
+CommandLineToArgvW proto :DWORD, :DWORD
 
 onCreate proto
 onDestroy proto
@@ -50,6 +51,8 @@ __charInput uint32 ?
 .CODE
 start proc
 	local wc:WNDCLASSEX, msg:MSG
+
+	call createAnotherProcess
 
 	invoke GetModuleHandle, NULL            
 	mov __programInst, eax 
@@ -116,6 +119,42 @@ start proc
 	invoke ExitProcess, msg.wParam                      
 start endp
 ;}
+
+createAnotherProcess proc
+	local cmd:ptr char, sinf:STARTUPINFO, pi:PROCESS_INFORMATION
+
+	.const
+	_cap_format db "%s -",0
+	_cap_fatal db "unsuccessful creation of process", 0
+	.data
+	_cap_buf db 1024 dup(0)
+	.code
+	invoke GetModuleFileNameA , NULL, offset _cap_buf, sizeof _cap_buf
+	invoke sprintf, offset _cap_buf, offset _cap_format, offset _cap_buf
+
+	invoke GetCommandLine
+	mov cmd, eax
+	invoke strlen, cmd
+	sub eax, 1
+	add eax, cmd
+	mov al, byte ptr [eax]
+
+	.if (al != "-")
+		invoke memzero, addr sinf, sizeof STARTUPINFO
+		invoke memzero, addr pi, sizeof PROCESS_INFORMATION
+		mov sinf.cb, sizeof STARTUPINFO
+
+		invoke CreateProcess, NULL, offset _cap_buf, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, addr sinf, addr pi
+		.if eax == 0
+			invoke MessageBox, NULL, offset _cap_fatal, NULL, MB_OK
+			invoke ExitProcess, 1
+		.endif
+		invoke CloseHandle, pi.hProcess 
+		invoke CloseHandle, pi.hThread
+	.endif
+
+	ret
+createAnotherProcess endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM 
 	.if uMsg==WM_CREATE
@@ -280,7 +319,7 @@ readConsole endp
 
 isKeyPressed proc key:VKey
 	xor eax, eax
-    invoke GetAsyncKeyState, key
+    invoke GetKeyState, key
 	and eax, 8000h
 	shr eax, 15
     ret

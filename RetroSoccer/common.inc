@@ -716,10 +716,13 @@ stopAudio proto
 ;;							network  								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; eax = SUCCESS|FAILURE
+connectToPort proto portNum:uint32
+
 ; eax=TRUE|FALSE
 isConnected proto
 
-; eax=was connected or not
+; eax = SUCCESS|FAILURE
 disconnect proto
 
 ; - send `len` bytes in buffer to other end
