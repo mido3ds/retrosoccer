@@ -5,121 +5,57 @@ include Ball.inc
 public bluePen, redPen, sprites
 
 .const
-fieldFileName db "assets/field.bmp",0
-spritesFileName db "assets/spritesheet.bmp",0
-mainScreenFileName db "assets/mainScreen.bmp",0
-gameOverScreenFileName db "assets/gameOverScreen.bmp",0
-
 .data
-field Bitmap ?
-sprites Bitmap ?
-mainScreenBmp Bitmap ?
-gameOverScreenBmp Bitmap ?
-bluePen Pen ?
-redPen Pen ?
-
 elapsedTime uint32 0
-screen uint32 MAIN_SCREEN
+screen uint32 TYPENAME_SCREEN
 
-level uint32 1
-matchTotalTime uint32 ?
-
-; level buttons
-lvl1BoxBB AABB <>
-lvl2BoxBB AABB <>
+.data?
+level uint32 ?
 
 .code
 game_asm:
 
 ; - called before window is shown
 onCreate proc
-	; resources
-	invoke loadBitmap, offset fieldFileName
-	mov field, eax
-	invoke loadBitmap, offset spritesFileName
-	mov sprites, eax
-	invoke loadBitmap, offset mainScreenFileName
-	mov mainScreenBmp, eax
-	invoke loadBitmap, offset gameOverScreenFileName
-	mov gameOverScreenBmp, eax
-	invoke createPen, 3, 0ff0000h ;blue
-	mov bluePen, eax
-	invoke createPen, 3, 0000ffh ;red
-	mov redPen, eax
-
-	; buttons
-	mov lvl1BoxBB.x0, 313
-	mov lvl1BoxBB.y0, 237
-	mov lvl1BoxBB.x1, 484
-	mov lvl1BoxBB.y1, 300
-
-	mov lvl2BoxBB.x0, 313
-	mov lvl2BoxBB.y0, 313
-	mov lvl2BoxBB.x1, 484
-	mov lvl2BoxBB.y1, 379
-
-	; players
-	invoke player1_reset
-	mov p1.color, PLAYER_COLOR_BLUE
-	invoke player2_reset
-	mov p2.color, PLAYER_COLOR_RED
+	call typenameScreen_onCreate
+	call mainScreen_onCreate
+	call chatScreen_onCreate
+	call levelSelectScreen_onCreate
+	call gameScreen_onCreate
 
 	ret
 onCreate endp
 
 ; - called after window is closed
 onDestroy proc
-	invoke deleteBitmap, field
-	invoke deleteBitmap, sprites
-	invoke deletePen, bluePen
-	invoke deletePen, redPen
+	call typenameScreen_onDestroy
+	call mainScreen_onDestroy
+	call chatScreen_onDestroy
+	call levelSelectScreen_onDestroy
+	call gameScreen_onDestroy
+	call gameoverScreen_onDestroy
+
 	ret
 onDestroy endp
 
 ; - game logic
 onUpdate proc t:uint32
-	.if (screen == MAIN_SCREEN)
-		invoke aabb_pointInBB, lvl1BoxBB, mousePos
-		.if (eax == TRUE)
-			invoke isLeftMouseClicked
-			.if (eax == TRUE)
-				invoke ball_init, LV1_BALL_SPD
-				mov matchTotalTime, LV1_MATCH_TIME
-				mov level, 1
-				mov screen, GAME_SCREEN
-			.endif
-		.endif
-		invoke aabb_pointInBB, lvl2BoxBB, mousePos
-		.if (eax == TRUE)
-			invoke isLeftMouseClicked
-			.if (eax == TRUE)
-				invoke ball_init, LV2_BALL_SPD
-				mov matchTotalTime, LV2_MATCH_TIME
-				mov level, 2
-				mov screen, GAME_SCREEN
-			.endif
-		.endif
+	push t
+	.if (screen == TYPENAME_SCREEN)
+		call typenameScreen_onUpdate
+	.elseif (screen == MAIN_SCREEN)
+		call mainScreen_onUpdate
+	.elseif (screen == CHAT_SCREEN)
+		call chatScreen_onUpdate
+	.elseif (screen == LEVEL_SELECT_SCREEN)	
+		call levelSelectScreen_onUpdate
 	.elseif (screen == GAME_SCREEN)
-		call player1_update
-		call player1_send
-		call player2_recv
-		call ball_update
-
-		mov eax, t
-		add elapsedTime, eax
-		mov eax, elapsedTime
-		.if (eax >= matchTotalTime)
-			mov screen, GAME_OVER_SCREEN
-			mov elapsedTime, 0
-		.endif
+		call gameScreen_onUpdate
 	.elseif (screen == GAME_OVER_SCREEN)
-		mov eax, t
-		add elapsedTime, eax
-		mov eax, elapsedTime
-		.if (eax >= GAME_OVER_SCREEN_TOTAL_TIME)
-			mov screen, MAIN_SCREEN
-			mov elapsedTime, 0
-		.endif
+		call gameoverScreen_onUpdate
+	.else
+		pop eax
+		call exit
 	.endif 
 	
 	;debugging
@@ -134,21 +70,236 @@ onUpdate endp
 
 ; - game rendering
 onDraw proc
-	.if (screen == MAIN_SCREEN)
-		invoke renderBitmap, mainScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	.if (screen == TYPENAME_SCREEN)
+		call typenameScreen_onDraw
+	.elseif (screen == MAIN_SCREEN)
+		call mainScreen_onDraw
+	.elseif (screen == CHAT_SCREEN)
+		call chatScreen_onDraw
+	.elseif (screen == LEVEL_SELECT_SCREEN)
+		call levelSelectScreen_onDraw
 	.elseif (screen == GAME_SCREEN)
-		call field_draw
-		call ball_draw
-		call player1_draw
-		call player2_draw
-		call writeScore
+		call gameScreen_onDraw
 	.elseif (screen == GAME_OVER_SCREEN)
-		invoke renderBitmap, gameOverScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
-		call writeFinalResult
+		call gameoverScreen_onDraw
 	.endif
 
 	ret
 onDraw endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Type Name Screen						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+typenameScreen_onCreate proc
+	
+	ret
+typenameScreen_onCreate endp
+
+typenameScreen_onDestroy proc
+	
+	ret
+typenameScreen_onDestroy endp
+
+typenameScreen_onDraw proc
+
+	ret
+typenameScreen_onDraw endp
+
+typenameScreen_onUpdate proc t:uint32
+
+	ret
+typenameScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Main Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+mainScreen_onCreate proc
+	
+	ret
+mainScreen_onCreate endp
+
+mainScreen_onDestroy proc
+	
+	ret
+mainScreen_onDestroy endp
+
+mainScreen_onDraw proc
+
+	ret
+mainScreen_onDraw endp
+
+mainScreen_onUpdate proc t:uint32
+
+	ret
+mainScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Chat Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+chatScreen_onCreate proc
+	
+	ret
+chatScreen_onCreate endp
+
+chatScreen_onDestroy proc
+	
+	ret
+chatScreen_onDestroy endp
+
+chatScreen_onDraw proc
+
+	ret
+chatScreen_onDraw endp
+
+chatScreen_onUpdate proc t:uint32
+
+	ret
+chatScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Level Select Screen    					   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+lvlselectScreenFileName db "assets/mainScreen.bmp",0
+
+.data
+.data?
+lvlselectScreenBmp Bitmap ?
+
+; level buttons
+lvl1BtnBB AABB <>
+lvl2BtnBB AABB <>
+
+.code
+levelSelectScreen_onCreate proc
+	invoke loadBitmap, offset lvlselectScreenFileName
+	mov lvlselectScreenBmp, eax
+
+	; buttons
+	invoke aabb_calc, 313, 237, 171, 63, addr lvl1BtnBB
+	invoke aabb_calc, 313, 313, 171, 63, addr lvl2BtnBB
+
+	ret
+levelSelectScreen_onCreate endp
+
+levelSelectScreen_onDestroy proc
+	invoke deleteBitmap, lvlselectScreenBmp
+	ret
+levelSelectScreen_onDestroy endp
+
+levelSelectScreen_onDraw proc
+	invoke renderBitmap, lvlselectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	ret
+levelSelectScreen_onDraw endp
+
+levelSelectScreen_onUpdate proc t:uint32
+	invoke aabb_pointInBB, lvl1BtnBB, mousePos
+	.if (eax == TRUE)
+		invoke isLeftMouseClicked
+		.if (eax == TRUE)
+			invoke ball_init, LV1_BALL_SPD
+			mov matchTotalTime, LV1_MATCH_TIME
+			mov level, 1
+			mov screen, GAME_SCREEN
+		.endif
+	.endif
+
+	invoke aabb_pointInBB, lvl2BtnBB, mousePos
+	.if (eax == TRUE)
+		invoke isLeftMouseClicked
+		.if (eax == TRUE)
+			invoke ball_init, LV2_BALL_SPD
+			mov matchTotalTime, LV2_MATCH_TIME
+			mov level, 2
+			mov screen, GAME_SCREEN
+		.endif
+	.endif
+
+	ret
+levelSelectScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Game Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+fieldFileName db "assets/field.bmp",0
+spritesFileName db "assets/spritesheet.bmp",0
+
+.data
+.data?
+field Bitmap ?
+sprites Bitmap ?
+bluePen Pen ?
+redPen Pen ?
+matchTotalTime uint32 ?
+
+.code
+gameScreen_onCreate proc
+	invoke loadBitmap, offset fieldFileName
+	mov field, eax
+	invoke loadBitmap, offset spritesFileName
+	mov sprites, eax
+	invoke createPen, 3, 0ff0000h ;blue
+	mov bluePen, eax
+	invoke createPen, 3, 0000ffh ;red
+	mov redPen, eax
+
+	; players
+	invoke player1_reset
+	mov p1.color, PLAYER_COLOR_BLUE
+	invoke player2_reset
+	mov p2.color, PLAYER_COLOR_RED
+
+	ret
+gameScreen_onCreate endp
+
+gameScreen_onDestroy proc
+	invoke deleteBitmap, field
+	invoke deleteBitmap, sprites
+	invoke deletePen, bluePen
+	invoke deletePen, redPen
+
+	ret
+gameScreen_onDestroy endp
+
+gameScreen_onDraw proc
+	call field_draw
+	call ball_draw
+	call player1_draw
+	call player2_draw
+	call writeScore
+
+	ret
+gameScreen_onDraw endp
+
+gameScreen_onUpdate proc t:uint32
+	call player1_update
+	call player1_send
+	call player2_recv
+	call ball_update
+
+	mov eax, t
+	add elapsedTime, eax
+	mov eax, elapsedTime
+	.if (eax >= matchTotalTime)
+		mov screen, GAME_OVER_SCREEN
+		mov elapsedTime, 0
+	.endif
+
+	ret
+gameScreen_onUpdate endp
 
 field_draw proc
 	invoke renderBitmap, field, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
@@ -176,6 +327,46 @@ writeScore proc
 	invoke drawText, offset buf, 36, 17, 128, 63, DT_LEFT or DT_TOP
 	ret
 writeScore endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Gameover Screen     					   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+gameOverScreenFileName db "assets/gameOverScreen.bmp",0
+
+.data
+.data?
+gameOverScreenBmp Bitmap ?
+
+.code
+gameoverScreen_onCreate proc
+	invoke loadBitmap, offset gameOverScreenFileName
+	mov gameOverScreenBmp, eax
+	ret
+gameoverScreen_onCreate endp
+
+gameoverScreen_onDestroy proc
+	invoke deleteBitmap, gameOverScreenBmp
+	ret
+gameoverScreen_onDestroy endp
+
+gameoverScreen_onDraw proc
+	invoke renderBitmap, gameOverScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	call writeFinalResult
+	ret
+gameoverScreen_onDraw endp
+
+gameoverScreen_onUpdate proc t:uint32
+	mov eax, t
+	add elapsedTime, eax
+	mov eax, elapsedTime
+	.if (eax >= GAME_OVER_SCREEN_TOTAL_TIME)
+		mov screen, LEVEL_SELECT_SCREEN
+		mov elapsedTime, 0
+	.endif
+
+	ret
+gameoverScreen_onUpdate endp
 
 writeFinalResult proc
 	local playerWon:uint32
