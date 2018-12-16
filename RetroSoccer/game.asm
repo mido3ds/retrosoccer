@@ -7,10 +7,10 @@ public bluePen, redPen, sprites
 .const
 .data
 elapsedTime uint32 0
-screen uint32 TYPENAME_SCREEN
-
-.data?
+screen uint32 0
 level uint32 ?
+userName db MAX_NAME_CHARS+1 dup(0)
+opponentName db "Player2",0 ;TODO
 
 .code
 game_asm:
@@ -22,6 +22,7 @@ onCreate proc
 	call chatScreen_onCreate
 	call levelSelectScreen_onCreate
 	call gameScreen_onCreate
+	call gameoverScreen_onCreate
 
 	ret
 onCreate endp
@@ -91,7 +92,9 @@ onDraw endp
 ;;							Type Name Screen						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+typeYourNameStr db "Type your name:",0
 .data
+charIndex uint32 0
 .data?
 .code
 typenameScreen_onCreate proc
@@ -105,11 +108,32 @@ typenameScreen_onDestroy proc
 typenameScreen_onDestroy endp
 
 typenameScreen_onDraw proc
-
+	invoke drawText, offset typeYourNameStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke drawText, offset userName, 305, 156+40, 305+200, 156+40+30, DT_CENTER or DT_TOP
 	ret
 typenameScreen_onDraw endp
 
 typenameScreen_onUpdate proc t:uint32
+	invoke getCharInput 
+	.if (eax == VK_RETURN)
+		.if (charIndex != 0)
+			inc screen
+			ret
+		.endif
+	.elseif (eax == VK_BACK)
+		.if (charIndex != 0)
+			dec charIndex
+			mov ebx, charIndex
+			mov userName[ebx], 0
+			ret
+		.endif
+	.elseif (eax != NULL)
+		.if (charIndex < MAX_NAME_CHARS)
+			mov ebx, charIndex
+			mov userName[ebx], al
+			inc charIndex
+		.endif
+	.endif
 
 	ret
 typenameScreen_onUpdate endp
@@ -308,13 +332,14 @@ field_draw endp
 
 writeScore proc
 	.CONST
-	playersNames db "Player1 - Player2",0
+	playersNamesFormat db "%s - %s",0
 	scoreFormat db "%02i - %02i",0 
 	timeFormat db "Time: %03i",0
 	.DATA
-	buf db 8 dup(0)
+	buf db 100 dup(0)
 	.CODE
-	invoke drawText, offset playersNames, 615, 17, 777, 63, DT_LEFT or DT_CENTER
+	invoke sprintf, offset buf, offset playersNamesFormat, offset userName, offset opponentName
+	invoke drawText, offset buf, 615, 17, 777, 63, DT_LEFT or DT_CENTER
 
 	invoke sprintf, offset buf, offset scoreFormat, p1.score, p2.score
 	invoke drawText, offset buf, 615, 17+20, 777, 63+20, DT_LEFT or DT_CENTER
@@ -369,20 +394,20 @@ gameoverScreen_onUpdate proc t:uint32
 gameoverScreen_onUpdate endp
 
 writeFinalResult proc
-	local playerWon:uint32
+	local playerWon:pntr
 
 	.CONST
-	finalResultFormat db "Player %i",0
+	finalResultFormat db "%s",0
 	finalScoreFormat db "Score: %i - %i",0
 	drawResultStr db "Draw",0
 	.DATA
-	finalResultBuf db 50 dup(0)
+	finalResultBuf db 100 dup(0)
 	.CODE
 
 	mov eax, p2.score
-	mov playerWon, 2
+	mov playerWon, offset opponentName
 	.if (p1.score > eax)
-		mov playerWon, 1
+		mov playerWon, offset userName
 	.elseif (p1.score == eax)
 		invoke drawText, offset drawResultStr, 283, 297, 514, 385, DT_LEFT or DT_CENTER
 		ret

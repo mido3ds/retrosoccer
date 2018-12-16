@@ -3,7 +3,6 @@ PLAYER_INC=1
 include common.inc
 
 Player struct
-	name db 30 dup(0) 
 	score uint32 ?
 	color uint32 ?
 	kickDir int32 ?
