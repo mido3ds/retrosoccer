@@ -15,6 +15,10 @@ opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool FALSE
 chatAccepted bool FALSE
 
+INVTYPE_CHAT equ 0
+INVTYPE_GAME equ 1
+invitationType uint32 ?
+
 .code
 game_asm:
 
@@ -24,7 +28,9 @@ onCreate proc
 	call typenameScreen_onCreate
 	call connectingScreen_onCreate
 	call mainScreen_onCreate
-	call invitationScreen_onCreate
+	call sendInvitationScreen_onCreate
+	call recvInvitationScreen_onCreate
+	call waitingScreen_onCreate
 	call selectScreen_onCreate
 	call gameScreen_onCreate
 	call gameoverScreen_onCreate
@@ -41,7 +47,9 @@ onDestroy proc
 	call typenameScreen_onDestroy
 	call connectingScreen_onDestroy
 	call mainScreen_onDestroy
-	call invitationScreen_onDestroy
+	call sendInvitationScreen_onDestroy
+	call recvInvitationScreen_onDestroy
+	call waitingScreen_onDestroy
 	call selectScreen_onDestroy
 	call gameScreen_onDestroy
 	call gameoverScreen_onDestroy
@@ -65,8 +73,12 @@ onUpdate proc t:uint32
 		call connectingScreen_onUpdate
 	.elseif (currentScreen == MAIN_SCREEN)
 		call mainScreen_onUpdate
-	.elseif (currentScreen == INVITATION_SCREEN)
-		call invitationScreen_onUpdate
+	.elseif (currentScreen == SEND_INV_SCREEN)
+		call sendInvitationScreen_onUpdate
+	.elseif (currentScreen == RECV_INV_SCREEN)
+		call recvInvitationScreen_onUpdate
+	.elseif (currentScreen == WAIT_OP_SCREEN)
+		call waitingScreen_onUpdate
 	.elseif (currentScreen == SELECT_SCREEN)
 		call selectScreen_onUpdate
 	.elseif (currentScreen == GAME_SCREEN)
@@ -101,8 +113,12 @@ onDraw proc
 		call connectingScreen_onDraw
 	.elseif (currentScreen == MAIN_SCREEN)
 		call mainScreen_onDraw
-	.elseif (currentScreen == INVITATION_SCREEN)
-		call invitationScreen_onDraw
+	.elseif (currentScreen == SEND_INV_SCREEN)
+		call sendInvitationScreen_onDraw
+	.elseif (currentScreen == RECV_INV_SCREEN)
+		call recvInvitationScreen_onDraw
+	.elseif (currentScreen == WAIT_OP_SCREEN) 
+		call waitingScreen_onDraw
 	.elseif (currentScreen == SELECT_SCREEN)
 		call selectScreen_onDraw
 	.elseif (currentScreen == GAME_SCREEN)
@@ -152,8 +168,9 @@ logoScreen_onDraw endp
 
 logoScreen_onUpdate proc t:uint32
 	invoke isKeyPressed, VK_RETURN
-	.if (eax == TRUE || elapsedTime >= LOGO_SCREEN_TOTAL_TIME)
+	.if (eax || elapsedTime >= LOGO_SCREEN_TOTAL_TIME)
 		invoke changeScreen, TYPENAME_SCREEN
+		printfln "going to typename screen",0
 		ret
 	.endif
 
@@ -192,6 +209,7 @@ typenameScreen_onUpdate proc t:uint32
 	.if (eax == VK_RETURN)
 		.if (charIndex != 0)
 			invoke changeScreen, CONNECTING_SCREEN
+			printfln "going to connecting screen",0
 			ret
 		.endif
 	.elseif (eax == VK_BACK)
@@ -249,6 +267,7 @@ connectingScreen_onUpdate proc t:uint32
 		printfln "userName=%s,opponentName=%s", offset userName, offset opponentName
 	.else
 		invoke changeScreen, CONNEC_ERROR_SCREEN
+		printfln "connectingScreen_onUpdate failed",0
 	.endif
 
 	ret
@@ -258,6 +277,7 @@ sendName proc
 	invoke send, offset userName, MAX_NAME_CHARS
 	.if (eax != MAX_NAME_CHARS)
 		invoke changeScreen, CONNEC_ERROR_SCREEN
+		printfln "sendName failed",0
 	.endif
 
 	ret
@@ -267,6 +287,7 @@ recvName proc
 	invoke recv, offset opponentName, MAX_NAME_CHARS
 	.if (eax != MAX_NAME_CHARS)
 		invoke changeScreen, CONNEC_ERROR_SCREEN
+		printfln "recvName failed",0
 	.endif
 
 	ret
@@ -276,7 +297,14 @@ recvName endp
 ;;							Main Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+playStr db "Play",0
+chatStr db "Chat",0
+exitStr db "Exit",0
+
 .data
+playBtn Button <305, 156, 305+200, 156+30>
+chatBtn Button <305, 156+30, 305+200, 156+30+30>
+exitBtn Button <305, 156+60, 305+200, 156+30+60>
 .data?
 .code
 mainScreen_onCreate proc
@@ -290,41 +318,173 @@ mainScreen_onDestroy proc
 mainScreen_onDestroy endp
 
 mainScreen_onDraw proc
-
+	invoke drawText, offset playStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke drawText, offset chatStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
+	invoke drawText, offset exitStr, 305, 156+60, 305+200, 156+30+60, DT_CENTER or DT_TOP
 	ret
 mainScreen_onDraw endp
 
 mainScreen_onUpdate proc t:uint32
+	;local sigReceived:byte
+	;invoke recvSig ; TODO fix so it doesn't block
+	invoke btn_isClicked, playBtn
+	.if (eax)
+		invoke changeScreen, SELECT_SCREEN
+		invoke sendSig, SIG_GAME_INV
+		printfln "going to select screen",0
+	.endif
 
+	invoke btn_isClicked, chatBtn
+	.if (eax)
+		invoke changeScreen, CHAT_SCREEN
+		invoke sendSig, SIG_CHAT_INV
+		printfln "going to chat screen",0
+	.endif
+
+	invoke btn_isClicked, exitBtn
+	.if (eax)
+		invoke changeScreen, EXIT_SCREEN
+		printfln "going to exit screen",0
+	.endif
 	ret
 mainScreen_onUpdate endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							invitation Screen     					   ;;
+;;							Send Invitation Screen     				   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+sendingInvStr db "Sending Invitation ...",0
+cancelStr db "[Cancel]",0
+.data
+cancelBtn Button <305, 156+30, 305+200, 156+30+30>
+.data?
+.code
+sendInvitationScreen_onCreate proc
+	
+	ret
+sendInvitationScreen_onCreate endp
+
+sendInvitationScreen_onDestroy proc
+	
+	ret
+sendInvitationScreen_onDestroy endp
+
+sendInvitationScreen_onDraw proc
+	invoke drawText, offset sendingInvStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke drawText, offset cancelStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
+	ret
+sendInvitationScreen_onDraw endp
+
+sendInvitationScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, cancelBtn
+	.if (eax)
+		invoke sendSig, SIG_CANCEL_INV
+		invoke changeScreen, MAIN_SCREEN
+		printfln "going to main screen",0
+	.endif
+
+	; TODO: fix so it doesn't block
+	invoke recvSig
+	.if (eax == SIG_ACCEPT_INV)
+		.if (invitationType == INVTYPE_CHAT) 
+			invoke sendSig, SIG_CHAT_START
+			invoke changeScreen, CHAT_SCREEN
+			printfln "going to chat screen",0
+		.elseif (invitationType == INVTYPE_GAME) 
+			invoke sendSig, SIG_GAME_START
+			invoke changeScreen, GAME_SCREEN
+			printfln "going to game screen",0
+		.endif
+	.endif
+	ret
+sendInvitationScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;						Receive Invitation Screen        			   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+acceptStr db "Accept",0
+declineStr db "Decline",0
+.data
+acceptBtn Button <305, 156, 305+200, 156+30>
+declineBtn Button <305, 156+30, 305+200, 156+30+30>
+.data?
+.code
+recvInvitationScreen_onCreate proc
+	
+	ret
+recvInvitationScreen_onCreate endp
+
+recvInvitationScreen_onDestroy proc
+	
+	ret
+recvInvitationScreen_onDestroy endp
+
+recvInvitationScreen_onDraw proc
+	; draw main text
+	.const 
+	_ris_mainTextFormat_game byte "%s Sent You Game Invitation",0
+	_ris_mainTextFormat_chat byte "%s Sent You Chat Invitation",0
+	.data?
+	_ris_buf byte 256 dup(0)
+	.code
+	.if (invitationType == INVTYPE_CHAT) 
+		invoke sprintf, offset _ris_buf, offset _ris_mainTextFormat_chat, offset opponentName
+	.else
+		invoke sprintf, offset _ris_buf, offset _ris_mainTextFormat_game, offset opponentName
+	.endif
+	invoke drawText, offset _ris_buf, 305, 156-30, 305+200, 156+30-30, DT_CENTER or DT_TOP
+
+	; draw buttons
+	invoke drawText, offset acceptStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke drawText, offset declineStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
+	ret
+recvInvitationScreen_onDraw endp
+
+recvInvitationScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, acceptBtn
+	.if (eax)
+		invoke sendSig, SIG_ACCEPT_INV
+		invoke changeScreen, WAIT_OP_SCREEN
+		printfln "going to waiting op screen",0
+	.endif
+
+	invoke btn_isClicked, declineBtn
+	.if (eax)
+		invoke sendSig, SIG_DECLINE_INV
+		invoke changeScreen, MAIN_SCREEN
+		printfln "going to main screen",0
+	.endif
+	ret
+recvInvitationScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;						Waiting Opponent Screen         			   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+waitingOpStr db "Waiting Other Player...",0
 .data
 .data?
 .code
-invitationScreen_onCreate proc
+waitingScreen_onCreate proc
 	
 	ret
-invitationScreen_onCreate endp
+waitingScreen_onCreate endp
 
-invitationScreen_onDestroy proc
+waitingScreen_onDestroy proc
 	
 	ret
-invitationScreen_onDestroy endp
+waitingScreen_onDestroy endp
 
-invitationScreen_onDraw proc
+waitingScreen_onDraw proc
+	invoke drawText, offset waitingOpStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	ret
+waitingScreen_onDraw endp
+
+waitingScreen_onUpdate proc t:uint32
 
 	ret
-invitationScreen_onDraw endp
-
-invitationScreen_onUpdate proc t:uint32
-
-	ret
-invitationScreen_onUpdate endp
+waitingScreen_onUpdate endp
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -359,7 +519,7 @@ selectScreen_onDraw endp
 
 selectScreen_onUpdate proc t:uint32
 	invoke btn_isClicked, lvl1Btn
-	.if (eax == TRUE) 
+	.if (eax) 
 		invoke ball_init, LV1_BALL_SPD
 		mov matchTotalTime, LV1_MATCH_TIME
 		mov level, 1
@@ -367,7 +527,7 @@ selectScreen_onUpdate proc t:uint32
 	.endif
 
 	invoke btn_isClicked, lvl2Btn
-	.if (eax == TRUE)
+	.if (eax)
 		invoke ball_init, LV2_BALL_SPD
 		mov matchTotalTime, LV2_MATCH_TIME
 		mov level, 2

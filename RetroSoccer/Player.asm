@@ -124,11 +124,11 @@ player1_getInput proc
 	; kick
 	mov p1.kickDir, 0
 	invoke isLeftMouseClicked
-	.if (eax == TRUE)
+	.if (eax)
 		mov p1.kickDir, KICK_DEFAULT_DIST
 	.endif
 	invoke isRightMouseClicked
-	.if (eax == TRUE)
+	.if (eax)
 		mov p1.kickDir, -KICK_DEFAULT_DIST
 	.endif
 

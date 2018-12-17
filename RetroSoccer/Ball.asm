@@ -69,7 +69,7 @@ ball_update proc
 		mov edx, i
 		invoke aabb_calc, p1.legPos[edx * sizeof Vec].x, p1.legPos[edx * sizeof Vec].y, SPR_LEG_WIDTH, SPR_LEG_HEIGHT, addr legBB
 		invoke aabb_collided, ballBB, legBB, addr colDir
-		.if (eax == TRUE)
+		.if (eax)
 			mov collided, TRUE
 			.break
 		.endif
@@ -78,7 +78,7 @@ ball_update proc
 		mov edx, i
 		invoke aabb_calc, p2.legPos[edx * sizeof Vec].x, p2.legPos[edx * sizeof Vec].y, SPR_LEG_WIDTH, SPR_LEG_HEIGHT, addr legBB
 		invoke aabb_collided, ballBB, legBB, addr colDir
-		.if (eax == TRUE)
+		.if (eax)
 			mov collided, TRUE
 			.break
 		.endif

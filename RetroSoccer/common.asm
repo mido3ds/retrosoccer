@@ -1072,7 +1072,7 @@ vec_neg endp
 
 btn_isClicked proc b:Button
 	invoke aabb_pointInBB, b, mousePos
-	.if (eax == TRUE)
+	.if (eax)
 		invoke isLeftMouseClicked
 	.endif
 	ret
