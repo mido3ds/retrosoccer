@@ -37,6 +37,7 @@ CHAT_SCREEN equ 8
 CONNEC_ERROR_SCREEN equ 9
 EXIT_SCREEN equ 10
 
+LOGO_SCREEN_TOTAL_TIME equ 0*1000
 GAME_OVER_SCREEN_TOTAL_TIME equ 7*1000
 MAX_NAME_CHARS equ 10
 
@@ -117,7 +118,7 @@ vec_cpy proto dest:ptr Vec, src:ptr Vec
 vec_set proto v:ptr Vec, x:int32, y:int32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							BoundingBox  							   ;;
+;;							Bounding Box  							   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 AABB STRUCT
@@ -131,6 +132,15 @@ aabb_zero proto a:ptr AABB
 aabb_calc proto x:uint32, y:uint32, w:uint32, h:uint32, aabb:ptr AABB
 aabb_pointInBB proto a:AABB, p:Vec
 aabb_collided proto a:AABB, b:AABB, collisionDir:ptr Vec
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Button  								   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Button typedef AABB
+
+btn_init proto btn:ptr Button, x:uint32, y:uint32, w:uint32, h:uint32
+btn_isClicked proto b:Button
+btn_isHovered proto b:Button
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							random  								   ;;

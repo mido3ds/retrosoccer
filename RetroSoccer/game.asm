@@ -121,6 +121,7 @@ changeScreen proc screen:uint32
 	mov previousScreen, eax
 	mov eax, screen
 	mov currentScreen, eax
+	mov elapsedTime, 0
 	ret
 changeScreen endp
 
@@ -142,12 +143,18 @@ logoScreen_onDestroy proc
 logoScreen_onDestroy endp
 
 logoScreen_onDraw proc
-
 	ret
 logoScreen_onDraw endp
 
 logoScreen_onUpdate proc t:uint32
+	invoke isKeyPressed, VK_RETURN
+	.if (eax == TRUE || elapsedTime >= LOGO_SCREEN_TOTAL_TIME)
+		invoke changeScreen, TYPENAME_SCREEN
+		ret
+	.endif
 
+	mov eax, t
+	add elapsedTime, eax
 	ret
 logoScreen_onUpdate endp
 
@@ -190,6 +197,8 @@ typenameScreen_onUpdate proc t:uint32
 			mov userName[ebx], 0
 			ret
 		.endif
+	.elseif (eax == VK_ESCAPE || eax == VK_TAB) ;ignore those buttons
+		ret
 	.elseif (eax != NULL)
 		.if (charIndex < MAX_NAME_CHARS)
 			mov ebx, charIndex
@@ -202,7 +211,7 @@ typenameScreen_onUpdate proc t:uint32
 typenameScreen_onUpdate endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							connecting Screen     						   ;;
+;;							Connecting Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
 .data
@@ -224,6 +233,7 @@ connectingScreen_onDraw proc
 connectingScreen_onDraw endp
 
 connectingScreen_onUpdate proc t:uint32
+	; TODO: connect
 
 	ret
 connectingScreen_onUpdate endp
@@ -294,8 +304,8 @@ selectScreenFileName db "assets/mainScreen.bmp",0
 selectScreenBmp Bitmap ?
 
 ; level buttons
-lvl1BtnBB AABB <>
-lvl2BtnBB AABB <>
+lvl1Btn Button <>
+lvl2Btn Button <>
 
 .code
 selectScreen_onCreate proc
@@ -303,8 +313,8 @@ selectScreen_onCreate proc
 	mov selectScreenBmp, eax
 
 	; buttons
-	invoke aabb_calc, 313, 237, 171, 63, addr lvl1BtnBB
-	invoke aabb_calc, 313, 313, 171, 63, addr lvl2BtnBB
+	invoke btn_init, addr lvl1Btn, 313, 237, 171, 63
+	invoke btn_init, addr lvl2Btn, 313, 313, 171, 63
 
 	ret
 selectScreen_onCreate endp
@@ -320,26 +330,20 @@ selectScreen_onDraw proc
 selectScreen_onDraw endp
 
 selectScreen_onUpdate proc t:uint32
-	invoke aabb_pointInBB, lvl1BtnBB, mousePos
-	.if (eax == TRUE)
-		invoke isLeftMouseClicked
-		.if (eax == TRUE)
-			invoke ball_init, LV1_BALL_SPD
-			mov matchTotalTime, LV1_MATCH_TIME
-			mov level, 1
-			invoke changeScreen, GAME_SCREEN
-		.endif
+	invoke btn_isClicked, lvl1Btn
+	.if (eax == TRUE) 
+		invoke ball_init, LV1_BALL_SPD
+		mov matchTotalTime, LV1_MATCH_TIME
+		mov level, 1
+		invoke changeScreen, GAME_SCREEN
 	.endif
 
-	invoke aabb_pointInBB, lvl2BtnBB, mousePos
+	invoke btn_isClicked, lvl2Btn
 	.if (eax == TRUE)
-		invoke isLeftMouseClicked
-		.if (eax == TRUE)
-			invoke ball_init, LV2_BALL_SPD
-			mov matchTotalTime, LV2_MATCH_TIME
-			mov level, 2
-			invoke changeScreen, GAME_SCREEN
-		.endif
+		invoke ball_init, LV2_BALL_SPD
+		mov matchTotalTime, LV2_MATCH_TIME
+		mov level, 2
+		invoke changeScreen, GAME_SCREEN
 	.endif
 
 	ret

@@ -936,4 +936,23 @@ vec_neg proc v:ptr Vec
 	ret
 vec_neg endp
 
+
+btn_isClicked proc b:Button
+	invoke aabb_pointInBB, b, mousePos
+	.if (eax == TRUE)
+		invoke isLeftMouseClicked
+	.endif
+	ret
+btn_isClicked endp
+
+btn_isHovered proc b:Button
+	invoke aabb_pointInBB, b, mousePos
+	ret
+btn_isHovered endp
+
+btn_init proc btn:ptr Button, x:uint32, y:uint32, w:uint32, h:uint32
+	invoke aabb_calc, x, y, w, h, btn
+	ret
+btn_init endp
+
 end start
