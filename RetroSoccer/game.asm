@@ -7,34 +7,45 @@ public bluePen, redPen, sprites
 .const
 .data
 elapsedTime uint32 0
-screen uint32 0
+previousScreen uint32 0
+currentScreen uint32 0
 level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
-opponentName db "Player2",0 ;TODO
+opponentName db "Player2",0 ;TODO: sync names
 
 .code
 game_asm:
 
 ; - called before window is shown
 onCreate proc
+	call logoScreen_onCreate
 	call typenameScreen_onCreate
+	call connectingScreen_onCreate
 	call mainScreen_onCreate
-	call chatScreen_onCreate
-	call levelSelectScreen_onCreate
+	call invitationScreen_onCreate
+	call selectScreen_onCreate
 	call gameScreen_onCreate
 	call gameoverScreen_onCreate
+	call chatScreen_onCreate
+	call connErrorScreen_onCreate
+	call exitScreen_onCreate
 
 	ret
 onCreate endp
 
 ; - called after window is closed
 onDestroy proc
+	call logoScreen_onDestroy
 	call typenameScreen_onDestroy
+	call connectingScreen_onDestroy
 	call mainScreen_onDestroy
-	call chatScreen_onDestroy
-	call levelSelectScreen_onDestroy
+	call invitationScreen_onDestroy
+	call selectScreen_onDestroy
 	call gameScreen_onDestroy
 	call gameoverScreen_onDestroy
+	call chatScreen_onDestroy
+	call connErrorScreen_onDestroy
+	call exitScreen_onDestroy
 
 	ret
 onDestroy endp
@@ -42,21 +53,28 @@ onDestroy endp
 ; - game logic
 onUpdate proc t:uint32
 	push t
-	.if (screen == TYPENAME_SCREEN)
+	.if (currentScreen == LOGO_SCREEN)
+		call logoScreen_onUpdate
+	.elseif (currentScreen == TYPENAME_SCREEN)
 		call typenameScreen_onUpdate
-	.elseif (screen == MAIN_SCREEN)
+	.elseif (currentScreen == CONNECTING_SCREEN)
+		call connectingScreen_onUpdate
+	.elseif (currentScreen == MAIN_SCREEN)
 		call mainScreen_onUpdate
-	.elseif (screen == CHAT_SCREEN)
-		call chatScreen_onUpdate
-	.elseif (screen == LEVEL_SELECT_SCREEN)	
-		call levelSelectScreen_onUpdate
-	.elseif (screen == GAME_SCREEN)
+	.elseif (currentScreen == INVITATION_SCREEN)
+		call invitationScreen_onUpdate
+	.elseif (currentScreen == SELECT_SCREEN)
+		call selectScreen_onUpdate
+	.elseif (currentScreen == GAME_SCREEN)
 		call gameScreen_onUpdate
-	.elseif (screen == GAME_OVER_SCREEN)
+	.elseif (currentScreen == GAME_OVER_SCREEN)
 		call gameoverScreen_onUpdate
-	.else
-		pop eax
-		call exit
+	.elseif (currentScreen == CHAT_SCREEN)
+		call chatScreen_onUpdate
+	.elseif (currentScreen == CONNEC_ERROR_SCREEN)
+		call connErrorScreen_onUpdate
+	.elseif (currentScreen == EXIT_SCREEN)
+		call exitScreen_onUpdate
 	.endif 
 	
 	;debugging
@@ -71,22 +89,67 @@ onUpdate endp
 
 ; - game rendering
 onDraw proc
-	.if (screen == TYPENAME_SCREEN)
+	.if (currentScreen == LOGO_SCREEN)
+		call logoScreen_onDraw
+	.elseif (currentScreen == TYPENAME_SCREEN)
 		call typenameScreen_onDraw
-	.elseif (screen == MAIN_SCREEN)
+	.elseif (currentScreen == CONNECTING_SCREEN)
+		call connectingScreen_onDraw
+	.elseif (currentScreen == MAIN_SCREEN)
 		call mainScreen_onDraw
-	.elseif (screen == CHAT_SCREEN)
-		call chatScreen_onDraw
-	.elseif (screen == LEVEL_SELECT_SCREEN)
-		call levelSelectScreen_onDraw
-	.elseif (screen == GAME_SCREEN)
+	.elseif (currentScreen == INVITATION_SCREEN)
+		call invitationScreen_onDraw
+	.elseif (currentScreen == SELECT_SCREEN)
+		call selectScreen_onDraw
+	.elseif (currentScreen == GAME_SCREEN)
 		call gameScreen_onDraw
-	.elseif (screen == GAME_OVER_SCREEN)
+	.elseif (currentScreen == GAME_OVER_SCREEN)
 		call gameoverScreen_onDraw
-	.endif
+	.elseif (currentScreen == CHAT_SCREEN)
+		call chatScreen_onDraw
+	.elseif (currentScreen == CONNEC_ERROR_SCREEN)
+		call connErrorScreen_onDraw
+	.elseif (currentScreen == EXIT_SCREEN)
+		call exitScreen_onDraw
+	.endif 
 
 	ret
 onDraw endp
+
+changeScreen proc screen:uint32
+	mov eax, currentScreen
+	mov previousScreen, eax
+	mov eax, screen
+	mov currentScreen, eax
+	ret
+changeScreen endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Logo Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+logoScreen_onCreate proc
+	
+	ret
+logoScreen_onCreate endp
+
+logoScreen_onDestroy proc
+	
+	ret
+logoScreen_onDestroy endp
+
+logoScreen_onDraw proc
+
+	ret
+logoScreen_onDraw endp
+
+logoScreen_onUpdate proc t:uint32
+
+	ret
+logoScreen_onUpdate endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Type Name Screen						   ;;
@@ -117,7 +180,7 @@ typenameScreen_onUpdate proc t:uint32
 	invoke getCharInput 
 	.if (eax == VK_RETURN)
 		.if (charIndex != 0)
-			inc screen
+			invoke changeScreen, CONNECTING_SCREEN
 			ret
 		.endif
 	.elseif (eax == VK_BACK)
@@ -137,6 +200,33 @@ typenameScreen_onUpdate proc t:uint32
 
 	ret
 typenameScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							connecting Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+connectingScreen_onCreate proc
+	
+	ret
+connectingScreen_onCreate endp
+
+connectingScreen_onDestroy proc
+	
+	ret
+connectingScreen_onDestroy endp
+
+connectingScreen_onDraw proc
+
+	ret
+connectingScreen_onDraw endp
+
+connectingScreen_onUpdate proc t:uint32
+
+	ret
+connectingScreen_onUpdate endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Main Screen     						   ;;
@@ -166,69 +256,70 @@ mainScreen_onUpdate proc t:uint32
 mainScreen_onUpdate endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							Chat Screen     						   ;;
+;;							invitation Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
 .data
 .data?
 .code
-chatScreen_onCreate proc
+invitationScreen_onCreate proc
 	
 	ret
-chatScreen_onCreate endp
+invitationScreen_onCreate endp
 
-chatScreen_onDestroy proc
+invitationScreen_onDestroy proc
 	
 	ret
-chatScreen_onDestroy endp
+invitationScreen_onDestroy endp
 
-chatScreen_onDraw proc
-
-	ret
-chatScreen_onDraw endp
-
-chatScreen_onUpdate proc t:uint32
+invitationScreen_onDraw proc
 
 	ret
-chatScreen_onUpdate endp
+invitationScreen_onDraw endp
+
+invitationScreen_onUpdate proc t:uint32
+
+	ret
+invitationScreen_onUpdate endp
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							Level Select Screen    					   ;;
+;;							Select Screen	    					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-lvlselectScreenFileName db "assets/mainScreen.bmp",0
+selectScreenFileName db "assets/mainScreen.bmp",0
 
 .data
 .data?
-lvlselectScreenBmp Bitmap ?
+selectScreenBmp Bitmap ?
 
 ; level buttons
 lvl1BtnBB AABB <>
 lvl2BtnBB AABB <>
 
 .code
-levelSelectScreen_onCreate proc
-	invoke loadBitmap, offset lvlselectScreenFileName
-	mov lvlselectScreenBmp, eax
+selectScreen_onCreate proc
+	invoke loadBitmap, offset selectScreenFileName
+	mov selectScreenBmp, eax
 
 	; buttons
 	invoke aabb_calc, 313, 237, 171, 63, addr lvl1BtnBB
 	invoke aabb_calc, 313, 313, 171, 63, addr lvl2BtnBB
 
 	ret
-levelSelectScreen_onCreate endp
+selectScreen_onCreate endp
 
-levelSelectScreen_onDestroy proc
-	invoke deleteBitmap, lvlselectScreenBmp
+selectScreen_onDestroy proc
+	invoke deleteBitmap, selectScreenBmp
 	ret
-levelSelectScreen_onDestroy endp
+selectScreen_onDestroy endp
 
-levelSelectScreen_onDraw proc
-	invoke renderBitmap, lvlselectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+selectScreen_onDraw proc
+	invoke renderBitmap, selectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
-levelSelectScreen_onDraw endp
+selectScreen_onDraw endp
 
-levelSelectScreen_onUpdate proc t:uint32
+selectScreen_onUpdate proc t:uint32
 	invoke aabb_pointInBB, lvl1BtnBB, mousePos
 	.if (eax == TRUE)
 		invoke isLeftMouseClicked
@@ -236,7 +327,7 @@ levelSelectScreen_onUpdate proc t:uint32
 			invoke ball_init, LV1_BALL_SPD
 			mov matchTotalTime, LV1_MATCH_TIME
 			mov level, 1
-			mov screen, GAME_SCREEN
+			invoke changeScreen, GAME_SCREEN
 		.endif
 	.endif
 
@@ -247,12 +338,12 @@ levelSelectScreen_onUpdate proc t:uint32
 			invoke ball_init, LV2_BALL_SPD
 			mov matchTotalTime, LV2_MATCH_TIME
 			mov level, 2
-			mov screen, GAME_SCREEN
+			invoke changeScreen, GAME_SCREEN
 		.endif
 	.endif
 
 	ret
-levelSelectScreen_onUpdate endp
+selectScreen_onUpdate endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Game Screen     						   ;;
@@ -318,7 +409,7 @@ gameScreen_onUpdate proc t:uint32
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= matchTotalTime)
-		mov screen, GAME_OVER_SCREEN
+		invoke changeScreen, GAME_OVER_SCREEN
 		mov elapsedTime, 0
 	.endif
 
@@ -386,7 +477,7 @@ gameoverScreen_onUpdate proc t:uint32
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= GAME_OVER_SCREEN_TOTAL_TIME)
-		mov screen, LEVEL_SELECT_SCREEN
+		invoke changeScreen, MAIN_SCREEN
 		mov elapsedTime, 0
 	.endif
 
@@ -420,5 +511,86 @@ writeFinalResult proc
 	invoke drawText, offset finalResultBuf, 283, 297+20, 514, 385+20, DT_LEFT or DT_CENTER
 	ret
 writeFinalResult endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Chat Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+chatScreen_onCreate proc
+	
+	ret
+chatScreen_onCreate endp
+
+chatScreen_onDestroy proc
+	
+	ret
+chatScreen_onDestroy endp
+
+chatScreen_onDraw proc
+
+	ret
+chatScreen_onDraw endp
+
+chatScreen_onUpdate proc t:uint32
+
+	ret
+chatScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;						Connection Error Screen         			   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+connErrorScreen_onCreate proc
+	
+	ret
+connErrorScreen_onCreate endp
+
+connErrorScreen_onDestroy proc
+	
+	ret
+connErrorScreen_onDestroy endp
+
+connErrorScreen_onDraw proc
+
+	ret
+connErrorScreen_onDraw endp
+
+connErrorScreen_onUpdate proc t:uint32
+
+	ret
+connErrorScreen_onUpdate endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Exit Screen     						   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.const
+.data
+.data?
+.code
+exitScreen_onCreate proc
+	
+	ret
+exitScreen_onCreate endp
+
+exitScreen_onDestroy proc
+	
+	ret
+exitScreen_onDestroy endp
+
+exitScreen_onDraw proc
+
+	ret
+exitScreen_onDraw endp
+
+exitScreen_onUpdate proc t:uint32
+
+	ret
+exitScreen_onUpdate endp
 
 end game_asm
