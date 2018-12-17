@@ -241,6 +241,13 @@ exit proc
 	ret
 exit endp
 
+setWindowSize proc w:uint32, h:uint32
+	local rect:RECT
+	invoke GetWindowRect, __mainWnd, addr rect
+	invoke MoveWindow, __mainWnd, rect.left, rect.top, w, h, FALSE
+	ret
+setWindowSize endp
+
 malloc proc memSize:uint32
 	invoke HeapAlloc, __processHeap, HEAP_ZERO_MEMORY or HEAP_GENERATE_EXCEPTIONS, memSize
 	ret

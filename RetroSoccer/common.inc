@@ -139,13 +139,15 @@ randBool proto
 seedRand proto s:uint32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;							general  								   ;;
+;;							Window  								   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 EXIT_SUCCESS=0
 EXIT_FAILURE=1
 
 ; - calls onDestroy and exit game
 exit proto 
+
+setWindowSize proto w:uint32, h:uint32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							graphics  								   ;;

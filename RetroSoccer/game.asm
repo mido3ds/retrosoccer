@@ -7,7 +7,7 @@ public bluePen, redPen, sprites
 .const
 .data
 elapsedTime uint32 0
-screen uint32 3
+screen uint32 0
 level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db "Player2",0 ;TODO
