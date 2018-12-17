@@ -156,7 +156,6 @@ aabb_collided proto a:AABB, b:AABB, collisionDir:ptr Vec
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Button typedef AABB
 
-btn_init proto btn:ptr Button, x:uint32, y:uint32, w:uint32, h:uint32
 btn_isClicked proto b:Button
 btn_isHovered proto b:Button
 
@@ -213,6 +212,10 @@ renderBitmap proto bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:
 
 ; - render transparent bitmap, takes background color to remove
 renderTBitmap proto bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
+
+; alpha = 0 -> transparent
+; alpha = 255 -> opaque
+alphaBlend proto bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32, alpha:byte
 
 ; - draw text in buffer in rectangle defined by (x1, x2, y1, y2), according to given format
 ; format values:

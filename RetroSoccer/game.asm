@@ -302,22 +302,16 @@ invitationScreen_onUpdate endp
 selectScreenFileName db "assets/mainScreen.bmp",0
 
 .data
+lvl1Btn Button <313, 237, 484, 300>
+lvl2Btn Button <313, 313, 484, 376>
+
 .data?
 selectScreenBmp Bitmap ?
-
-; level buttons
-lvl1Btn Button <>
-lvl2Btn Button <>
 
 .code
 selectScreen_onCreate proc
 	invoke loadBitmap, offset selectScreenFileName
 	mov selectScreenBmp, eax
-
-	; buttons
-	invoke btn_init, addr lvl1Btn, 313, 237, 171, 63
-	invoke btn_init, addr lvl2Btn, 313, 313, 171, 63
-
 	ret
 selectScreen_onCreate endp
 

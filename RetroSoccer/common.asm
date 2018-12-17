@@ -605,6 +605,40 @@ renderBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:u
     ret
 renderBitmap endp
 
+BLENDFUNCTION struct
+	BlendOp byte ?
+	BlendFlags byte ?
+	SourceConstantAlpha byte ?
+	AlphaFormat byte ?
+BLENDFUNCTION ends
+AlphaBlend proto :dword, :dword, :dword, :dword, :dword, :dword, :dword, :dword, :dword, :dword, :BLENDFUNCTION
+alphaBlend proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32, alpha:byte
+	local bitmapDC:HDC, oldBitmap:HBITMAP
+
+	.data
+	_ab_bf BLENDFUNCTION <0,0,0,0>
+	.code
+	mov al, alpha
+	mov _ab_bf.SourceConstantAlpha, al
+
+	; add to origin
+	mov eax, xs
+	add eax, __worldX
+	mov xs, eax
+	mov eax, ys
+	add eax, __worldY
+	mov ys, eax
+
+	invoke CreateCompatibleDC, __hdcTemp
+	mov bitmapDC, eax
+	invoke SelectObject, bitmapDC, bitmap
+	mov oldBitmap, eax
+	invoke AlphaBlend, __hdcTemp, xs, ys, w, h, bitmapDC, xb, yb, w, h, _ab_bf
+	invoke SelectObject, bitmapDC, oldBitmap
+	invoke DeleteDC, bitmapDC
+	ret
+alphaBlend endp
+
 TransparentBlt proto :dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword
 renderTBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
 	local bitmapDC:HDC, oldBitmap:HBITMAP
@@ -1048,10 +1082,5 @@ btn_isHovered proc b:Button
 	invoke aabb_pointInBB, b, mousePos
 	ret
 btn_isHovered endp
-
-btn_init proc btn:ptr Button, x:uint32, y:uint32, w:uint32, h:uint32
-	invoke aabb_calc, x, y, w, h, btn
-	ret
-btn_init endp
 
 end start
