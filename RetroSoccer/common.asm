@@ -31,7 +31,7 @@ CONOUT char "CONOUT$",0
 MAIN_CLASS_NAME char "MainWindowClass",0
 APP_NAME db "RetroSoccer",0  
 
-.DATA?    
+.data?    
 mousePos Vec <>       
 __programInst HINSTANCE ?        
 __processHeap uint32 ?
@@ -45,6 +45,8 @@ __randSeed uint32 ?
 __charInput uint32 ?
 __portNum uint32 ?
 __portHndl HANDLE ?
+__worldX int32 ?
+__worldY int32 ?
 
 .CODE
 start proc
@@ -212,27 +214,27 @@ getTitleHeight proc
 	ret
 getTitleHeight endp
 
-.DATA?
-hdc HDC ?
-hdcMemBitmap HBITMAP ?
-.CODE
+.data?
+_pbsb_hdc HDC ?
+_pbsb_hdcMemBitmap HBITMAP ?
+.code
 
 prepareBuffers proc
 	invoke GetDC, __mainWnd
-	mov hdc, eax
-	invoke CreateCompatibleDC, hdc
+	mov _pbsb_hdc, eax
+	invoke CreateCompatibleDC, _pbsb_hdc
 	mov __hdcTemp, eax
-	invoke CreateCompatibleBitmap, hdc, WND_WIDTH, WND_HEIGHT
-	mov hdcMemBitmap, eax
-	invoke SelectObject, __hdcTemp, hdcMemBitmap
+	invoke CreateCompatibleBitmap, _pbsb_hdc, WND_WIDTH, WND_HEIGHT
+	mov _pbsb_hdcMemBitmap, eax
+	invoke SelectObject, __hdcTemp, _pbsb_hdcMemBitmap
 	ret
 prepareBuffers endp
 
 swapBuffers proc
-	invoke BitBlt, hdc, 0, 0, WND_WIDTH, WND_HEIGHT, __hdcTemp, 0, 0, SRCCOPY
+	invoke BitBlt, _pbsb_hdc, 0, 0, WND_WIDTH, WND_HEIGHT, __hdcTemp, 0, 0, SRCCOPY
 	invoke DeleteDC, __hdcTemp
-	invoke DeleteObject, hdcMemBitmap
-	invoke ReleaseDC, __mainWnd, hdc 
+	invoke DeleteObject, _pbsb_hdcMemBitmap
+	invoke ReleaseDC, __mainWnd, _pbsb_hdc 
 	ret
 swapBuffers endp
 
@@ -561,6 +563,14 @@ recvSig proc
 	ret
 recvSig endp
 
+setWorldOrigin proc x:int32, y:int32
+	mov eax, x
+	add __worldX, eax
+	mov eax, y
+	add __worldY, eax
+	ret
+setWorldOrigin endp
+
 ; eax = handle to bitmap|NULL
 loadBitmap proc fileName:ptr char
 	invoke LoadImage, NULL, fileName, IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE or LR_LOADFROMFILE or LR_CREATEDIBSECTION
@@ -577,6 +587,13 @@ deleteBitmap endp
 ; - (w, h) is how many pixels it would take from the bitmap
 renderBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32
 	local bitmapDC:HDC, oldBitmap:HBITMAP
+	; add to origin
+	mov eax, xs
+	add eax, __worldX
+	mov xs, eax
+	mov eax, ys
+	add eax, __worldY
+	mov ys, eax
 
 	invoke CreateCompatibleDC, __hdcTemp
 	mov bitmapDC, eax
@@ -591,6 +608,14 @@ renderBitmap endp
 TransparentBlt proto :dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword,:dword
 renderTBitmap proc bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:uint32, h:uint32, bkgColor:Color
 	local bitmapDC:HDC, oldBitmap:HBITMAP
+
+	; add to origin
+	mov eax, xs
+	add eax, __worldX
+	mov xs, eax
+	mov eax, ys
+	add eax, __worldY
+	mov ys, eax
 
 	invoke CreateCompatibleDC, __hdcTemp
 	mov bitmapDC, eax
@@ -624,14 +649,22 @@ renderTBitmap endp
 ; If the function fails, the return value is zero.
 drawText proc buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:uint32
 	local rect:RECT
-	push x1
-	pop rect.left
-	push x2
-	pop rect.right
-	push y1
-	pop rect.top
-	push y2
-	pop rect.bottom
+
+	; add to origin
+	mov eax, x1
+	add eax, __worldX
+	mov rect.left, eax
+	mov eax, x2
+	add eax, __worldX
+	mov rect.right, eax
+
+	mov eax, y1
+	add eax, __worldY
+	mov rect.top, eax
+	mov eax, y2
+	add eax, __worldY
+	mov rect.bottom, eax
+
 	invoke DrawText, __hdcTemp, buf, -1, addr rect, format
     ret
 drawText endp
@@ -731,22 +764,75 @@ setBrushColor proc color:Color
 setBrushColor endp
 
 drawLine proc x1:uint32, y1:uint32, x2:uint32, y2:uint32
+	; add to origin
+	mov eax, x1
+	add eax, __worldX
+	mov x1, eax
+	mov eax, y1
+	add eax, __worldY
+	mov y1, eax
+	mov eax, x2
+	add eax, __worldX
+	mov x2, eax
+	mov eax, y2
+	add eax, __worldY
+	mov y2, eax
+
 	invoke MoveToEx, __hdcTemp, x1, y1, NULL
 	invoke LineTo, __hdcTemp, x2, y2
     ret
 drawLine endp
 
 drawRect proc x1:uint32, y1:uint32, x2:uint32, y2:uint32
+	; add to origin
+	mov eax, x1
+	add eax, __worldX
+	mov x1, eax
+	mov eax, y1
+	add eax, __worldY
+	mov y1, eax
+	mov eax, x2
+	add eax, __worldX
+	mov x2, eax
+	mov eax, y2
+	add eax, __worldY
+	mov y2, eax
 	invoke Rectangle, __hdcTemp, x1, y1, x2, y2
     ret
 drawRect endp
 
 drawRoundRect proc x1:uint32, y1:uint32, x2:uint32, y2:uint32, w:uint32, h:uint32
+	; add to origin
+	mov eax, x1
+	add eax, __worldX
+	mov x1, eax
+	mov eax, y1
+	add eax, __worldY
+	mov y1, eax
+	mov eax, x2
+	add eax, __worldX
+	mov x2, eax
+	mov eax, y2
+	add eax, __worldY
+	mov y2, eax
 	invoke RoundRect, __hdcTemp, x1, y1, x2, y2, w, h
     ret
 drawRoundRect endp
 
 drawEllipse proc x1:uint32, y1:uint32, x2:uint32, y2:uint32
+	; add to origin
+	mov eax, x1
+	add eax, __worldX
+	mov x1, eax
+	mov eax, y1
+	add eax, __worldY
+	mov y1, eax
+	mov eax, x2
+	add eax, __worldX
+	mov x2, eax
+	mov eax, y2
+	add eax, __worldY
+	mov y2, eax
 	invoke Ellipse, __hdcTemp, x1, y1, x2, y2
     ret
 drawEllipse endp

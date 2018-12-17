@@ -199,6 +199,8 @@ Color typedef uint32
 ;     00ffffffH -> white
 clearScreen proto color:Color
 
+setWorldOrigin proto x:int32, y:int32
+
 ; eax = handle to bitmap|NULL
 loadBitmap proto fileName:ptr char
 

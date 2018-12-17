@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 0
+currentScreen uint32 SELECT_SCREEN
 level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db "Player2",0 ;TODO: sync names
