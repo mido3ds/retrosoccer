@@ -12,6 +12,8 @@ currentScreen uint32 0
 level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db "Player2",0 ;TODO: sync names
+isHost bool FALSE
+chatAccepted bool FALSE
 
 .code
 game_asm:

@@ -548,6 +548,19 @@ waitConnEvent proc event:dword
 	ret
 waitConnEvent endp
 
+sendSig proc signal:byte
+	local numBytes:uint32
+	invoke WriteFile, __portHndl, addr signal, 1, addr numBytes, NULL
+	ret
+sendSig endp
+
+recvSig proc
+	local buffer:byte, numBytesRead:uint32
+	invoke ReadFile, __portHndl, addr buffer, 1, addr numBytesRead, NULL
+	mov al, buffer
+	ret
+recvSig endp
+
 ; eax = handle to bitmap|NULL
 loadBitmap proc fileName:ptr char
 	invoke LoadImage, NULL, fileName, IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE or LR_LOADFROMFILE or LR_CREATEDIBSECTION

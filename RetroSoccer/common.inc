@@ -25,6 +25,7 @@ SECOND_PLAYER_PORT equ 2
 WND_WIDTH    equ	800
 WND_HEIGHT   equ	500 
 
+; screens
 LOGO_SCREEN equ 0
 TYPENAME_SCREEN equ 1
 CONNECTING_SCREEN equ 2
@@ -36,6 +37,23 @@ GAME_OVER_SCREEN equ 7
 CHAT_SCREEN equ 8
 CONNEC_ERROR_SCREEN equ 9
 EXIT_SCREEN equ 10
+
+; signals
+SIG_CONNECT 		equ 	1
+SIG_GAME_INV 		equ 	2 
+SIG_ACCEPT_INV 		equ 	3 
+SIG_DECLINE_INV 	equ 	4 
+SIG_GAME_START 		equ 	5 
+SIG_CHAT_INV 		equ 	6 
+SIG_CHAT_START 		equ 	7 
+SIG_CHAT_CLOSE 		equ 	8 
+SIG_EXIT 			equ 	9 
+SIG_GAME_FINISH 	equ 	10
+SIG_GOAL 			equ 	11
+SIG_GAME_DATA 		equ 	12
+SIG_CHAT_DATA 		equ 	13
+SIG_SEED 			equ 	14
+SIG_ERROR			equ 	15
 
 LOGO_SCREEN_TOTAL_TIME equ 0*1000
 GAME_OVER_SCREEN_TOTAL_TIME equ 7*1000
@@ -765,5 +783,11 @@ send proto buffer:ptr byte, n:uint32
 ; - recieve and stores `n` bytes to `buffer` 
 ; eax=num of bytes received
 recv proto buffer:ptr byte, n:uint32
+
+; eax=TRUE|FALSE
+sendSig proto signal:byte
+
+; al=NULL|signal
+recvSig proto
 
 endif ;COMMON_INC
