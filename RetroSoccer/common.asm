@@ -290,14 +290,44 @@ open proc fileName:ptr char
     ret
 open endp
 
-readAll proc fileName:ptr char
+getFileSize proc file:File
+	invoke seek, file, 0, SEEK_END
+	push eax
+	invoke seek, file, 0, SEEK_SET
+	pop eax
+	ret
+getFileSize endp
+
+readAll proc fileName:ptr char, fileSize:ptr uint32
+	local buf:pntr, file:File, numRead:uint32
+
     invoke open, fileName
 	.if (!eax) 
 		mov eax, FAIL
 		ret
 	.endif
+	mov file, eax
 
-	;invoke ;TODO
+	invoke getFileSize, file
+	.if (eax == -1)
+		mov eax, FAIL
+		ret
+	.endif
+	mov ebx, fileSize
+	mov [ebx], eax
+	invoke malloc, eax
+	mov buf, eax
+
+	mov ebx, fileSize
+	invoke ReadFile, file, buf, [ebx], addr numRead, NULL
+	mov ebx, fileSize
+	mov ebx, [ebx]
+	.if (eax != TRUE || numRead < ebx)
+		mov eax, FAIL
+		ret
+	.endif
+
+	mov eax, buf
     ret
 readAll endp
 
@@ -365,23 +395,28 @@ hideMouse proc
     ret
 hideMouse endp
 
-loadAudio proc
-    ;TODO
-    ret
+; eax=Audio handle|FAIL
+loadAudio proc fileName:ptr char
+	local temp:ptr uint32
+	invoke readAll, fileName, addr temp
+	ret
 loadAudio endp
 
-runAudio proc
-    ;TODO
-    ret
-runAudio endp
+; eax=SUCCESS|FAIL
+deleteAudio proc audio:Audio
+	invoke free, audio
+	ret
+deleteAudio endp
 
-pauseAudio proc
-    ;TODO
+PlaySound proto :dword,:dword,:dword
+playAudio proc audio:Audio, flags:uint32
+	or flags, SND_MEMORY
+    invoke PlaySound, audio, NULL, flags
     ret
-pauseAudio endp
+playAudio endp
 
 stopAudio proc
-    ;TODO
+    invoke PlaySound, NULL, 0, 0
     ret
 stopAudio endp
 
@@ -577,7 +612,6 @@ drawText proc buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:u
 	pop rect.top
 	push y2
 	pop rect.bottom
-
 	invoke DrawText, __hdcTemp, buf, -1, addr rect, format
     ret
 drawText endp
@@ -587,6 +621,17 @@ setTextColor proc color:Color
 	invoke SetTextColor, __hdcTemp, color
     ret
 setTextColor endp
+
+setBkColor proc color:Color
+	invoke SetBkColor, __hdcTemp, color
+	ret
+setBkColor endp
+
+; mode=TRANSPARENT|OPAQUE
+setBkMode proc mode:uint32
+	invoke SetBkMode, __hdcTemp, mode
+	ret
+setBkMode endp
 
 ; eax=handle to font|NULL
 ; available weights: FW_DONTCARE, FW_THIN, FW_EXTRALIGHT, FW_LIGHT, 

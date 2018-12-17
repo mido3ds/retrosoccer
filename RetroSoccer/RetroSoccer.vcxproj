@@ -95,7 +95,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EntryPointSymbol>start</EntryPointSymbol>
-      <AdditionalDependencies>MSImg32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>MSImg32.Lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

@@ -202,6 +202,11 @@ drawText proto buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:
 ; eax=previous color|CLR_INVALID
 setTextColor proto color:Color
 
+setBkColor proto color:Color
+
+; mode=TRANSPARENT|OPAQUE
+setBkMode proto mode:uint32
+
 ; eax=handle to font|NULL
 ; available weights: FW_DONTCARE, FW_THIN, FW_EXTRALIGHT, FW_LIGHT, 
 ;                   FW_NORMAL, FW_MEDIUM, FW_SEMIBOLD, FW_BOLD, 
@@ -461,14 +466,14 @@ close equ <_lclose>
 _lclose proto file:File
 
 ; - read `len` bytes from `file` into `buffer`
-; eax = bytes read|FAIL
+; eax = bytes read
 ;
 ; linux read: https://linux.die.net/man/3/read
 read equ <_lread>
 _lread proto file:File, buffer:ptr byte, len:uint32
 
 ; - write `len` bytes from `buffer` into `file`
-; eax = bytes written|FAIL
+; eax = bytes written
 ;
 ; linux write: https://linux.die.net/man/3/write
 write equ <_lwrite>
@@ -489,7 +494,7 @@ _llseek proto file:File, distance:uint32, moveMethod:uint32
 
 ; - convenience function to read all file
 ; eax = pointer to buffer|FAIL
-readAll proto fileName:ptr char
+readAll proto fileName:ptr char, fileSize:ptr uint32
 
 ; - convenience function to write bytes to file
 ; eax = SUCCESS|FAIL
@@ -708,13 +713,14 @@ hideMouse proto
 Audio typedef dword
 
 ; eax=Audio handle|FAIL
-loadAudio proto
+loadAudio proto fileName:ptr char
 
 ; eax=SUCCESS|FAIL
-runAudio proto
+deleteAudio proto audio:Audio
 
 ; eax=SUCCESS|FAIL
-pauseAudio proto
+; flags = SND_ASYNC | SND_LOOP 
+playAudio proto audio:Audio, flags:uint32
 
 ; eax=SUCCESS|FAIL
 stopAudio proto
