@@ -776,7 +776,16 @@ opeConnection proto
 closeConnection proto
 
 ; blocks until event happens
-; events: EV_BREAK, EV_CTS, EV_DSR, EV_ERR, EV_RING, EV_RLSD, EV_RXCHAR, EV_RXFLAG, EV_TXEMPTY
+; events: 
+EV_RXCHAR                            equ 1h
+EV_RXFLAG                            equ 2h
+EV_TXEMPTY                           equ 4h
+EV_CTS                               equ 8h
+EV_DSR                               equ 10h
+EV_RLSD                              equ 20h
+EV_BREAK                             equ 40h
+EV_ERR                               equ 80h
+EV_RING                              equ 100h
 ; for more info: https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-waitcommevent
 waitConnEvent proto event:dword
 

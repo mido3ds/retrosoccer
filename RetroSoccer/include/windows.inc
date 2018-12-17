@@ -574,15 +574,6 @@ IE_DEFAULT                           equ -5
 IE_HARDWARE                          equ -10
 IE_BYTESIZE                          equ -11
 IE_BAUDRATE                          equ -12
-EV_RXCHAR                            equ 1h
-EV_RXFLAG                            equ 2h
-EV_TXEMPTY                           equ 4h
-EV_CTS                               equ 8h
-EV_DSR                               equ 10h
-EV_RLSD                              equ 20h
-EV_BREAK                             equ 40h
-EV_ERR                               equ 80h
-EV_RING                              equ 100h
 EV_PERR                              equ 200h
 EV_RX80FULL                          equ 400h
 EV_EVENT1                            equ 800h

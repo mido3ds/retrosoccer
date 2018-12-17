@@ -8,10 +8,10 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 SELECT_SCREEN
+currentScreen uint32 TYPENAME_SCREEN
 level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
-opponentName db "Player2",0 ;TODO: sync names
+opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool FALSE
 chatAccepted bool FALSE
 
@@ -48,6 +48,8 @@ onDestroy proc
 	call chatScreen_onDestroy
 	call connErrorScreen_onDestroy
 	call exitScreen_onDestroy
+
+	call closeConnection
 
 	ret
 onDestroy endp
@@ -216,6 +218,8 @@ typenameScreen_onUpdate endp
 ;;							Connecting Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+connectingStr db "Connecting ...", 0
+
 .data
 .data?
 .code
@@ -230,15 +234,43 @@ connectingScreen_onDestroy proc
 connectingScreen_onDestroy endp
 
 connectingScreen_onDraw proc
-
+	invoke drawText, offset connectingStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
 	ret
 connectingScreen_onDraw endp
 
 connectingScreen_onUpdate proc t:uint32
-	; TODO: connect
+	invoke sendSig, SIG_CONNECT
+	invoke recvSig
+	.if (eax == SIG_CONNECT)
+		invoke changeScreen, MAIN_SCREEN
+		call sendName
+		call recvName
+
+		printfln "userName=%s,opponentName=%s", offset userName, offset opponentName
+	.else
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+	.endif
 
 	ret
 connectingScreen_onUpdate endp
+
+sendName proc
+	invoke send, offset userName, MAX_NAME_CHARS
+	.if (eax != MAX_NAME_CHARS)
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+	.endif
+
+	ret
+sendName endp
+
+recvName proc
+	invoke recv, offset opponentName, MAX_NAME_CHARS
+	.if (eax != MAX_NAME_CHARS)
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+	.endif
+
+	ret
+recvName endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Main Screen     						   ;;
