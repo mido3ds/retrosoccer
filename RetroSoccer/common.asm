@@ -66,7 +66,7 @@ start proc
 
 	call openConnection
 
-	call createPortThread
+	call createPortThreads
 
 	mov   wc.cbSize, SIZEOF WNDCLASSEX                   
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
@@ -458,7 +458,8 @@ _commun_writeIndex uint32 ?
 _commun_userReadIndex uint32 ?
 _commun_userWriteIndex uint32 ?
 _commun_portHndl HANDLE ?
-_commun_portThreadHndl HANDLE ?
+_commun_portWriterThreadHndl HANDLE ?
+_commun_portReaderThreadHndl HANDLE ?
 
 .code
 _send proc 
@@ -525,22 +526,51 @@ _recv proc
 	ret
 _recv endp
 
-_commun_portThreadFun proc par:pntr
+_commun_portWriterThreadFun proc par:pntr
 	.while _commun_isConnected
 		call _send
-		.break .if (!eax)
+		.if (!eax)
+			mov _commun_isConnected, FALSE
+			ret
+		.endif
+
 		call _recv
 	.endw
-	mov _commun_isConnected, FALSE
 	ret
-_commun_portThreadFun endp
+_commun_portWriterThreadFun endp
 
-createPortThread proc
-	invoke CreateThread, NULL, NULL, offset _commun_portThreadFun, NULL, NULL, NULL
-	mov _commun_portThreadHndl, eax
+_commun_portReaderThreadFun proc par:pntr
+	local event:dword
+	invoke SetCommMask, _commun_portHndl, EV_RXCHAR or EV_ERR
 
-	printf ">> Opening port thread ",0
-	.if (_commun_portThreadHndl)
+	.while _commun_isConnected
+		invoke WaitCommEvent, _commun_portHndl, addr event, NULL
+		.break .if (!event || event & EV_ERR)
+
+		call _recv
+	.endw
+	ret
+_commun_portReaderThreadFun endp
+
+createPortThreads proc
+	; writer 
+	invoke CreateThread, NULL, NULL, offset _commun_portWriterThreadFun, NULL, NULL, NULL
+	mov _commun_portWriterThreadHndl, eax
+
+	printf ">> Opening writer port thread ",0
+	.if (_commun_portWriterThreadHndl)
+		printfln "SUCCESS",0
+	.else	
+		printfln "FAIL",0
+		invoke ExitProcess, FAIL
+	.endif
+
+	; reader
+	invoke CreateThread, NULL, NULL, offset _commun_portReaderThreadFun, NULL, NULL, NULL
+	mov _commun_portReaderThreadHndl, eax
+
+	printf ">> Opening reader port thread ",0
+	.if (_commun_portReaderThreadHndl)
 		printfln "SUCCESS",0
 	.else	
 		printfln "FAIL",0
@@ -548,7 +578,7 @@ createPortThread proc
 	.endif
 	
 	ret
-createPortThread endp
+createPortThreads endp
 
 openConnection proc 
 	local portDcb:DCB, portTimeouts:COMMTIMEOUTS
