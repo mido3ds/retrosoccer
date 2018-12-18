@@ -259,7 +259,9 @@ connectingScreen_onDraw endp
 connectingScreen_onUpdate proc t:uint32
 	invoke sendSig, SIG_CONNECT
 	invoke recvSig
-	.if (eax == SIG_CONNECT)
+	.if (!eax)
+		ret
+	.elseif (eax == SIG_CONNECT)
 		invoke changeScreen, MAIN_SCREEN
 		call sendName
 		call recvName
@@ -284,7 +286,7 @@ sendName proc
 sendName endp
 
 recvName proc
-	invoke recv, offset opponentName, MAX_NAME_CHARS
+	invoke recv, offset opponentName, MAX_NAME_CHARS, 30 * 1000
 	.if (eax != MAX_NAME_CHARS)
 		invoke changeScreen, CONNEC_ERROR_SCREEN
 		printfln "recvName failed",0

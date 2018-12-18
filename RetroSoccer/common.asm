@@ -50,7 +50,7 @@ __worldY int32 ?
 
 .CODE
 start proc
-	local wc:WNDCLASSEX, msg:MSG
+	local wc:WNDCLASSEX, msg:MSG, num:int32
 
 	call createAnotherProcess
 
@@ -527,19 +527,35 @@ send proc buffer:ptr byte, n:uint32
     ret
 send endp
 
-recv proc buffer:ptr byte, n:uint32
-	local numBytesRead:uint32, allBytes:uint32
+recv proc buffer:ptr byte, n:uint32, timeout:uint32
+	local numBytesRead:uint32, allBytes:uint32, lastTick:uint32
 	mov eax, n
 	mov allBytes, eax
+	add timeout, 100;offset
+	
 
     .while n > 0
-		invoke ReadFile, __portHndl, buffer, n, addr numBytesRead, NULL
-		.break .if numBytesRead == 0
+		cmp timeout, 0
+		jl _recv_endw; break if timeout < 0
 
+		; lastTick = GetTickCount()
+		invoke GetTickCount
+		mov lastTick, eax
+
+		invoke ReadFile, __portHndl, buffer, n, addr numBytesRead, NULL
+
+		; timout -= GetTickCount() - lastTick
+		invoke GetTickCount
+		sub eax, lastTick
+		sub timeout, eax
+		
 		mov eax, numBytesRead
-		sub n, eax
-		add buffer, eax
+		; n -= numBytesRead
+		sub n, eax 
+		; buffer += numBytesRead
+		add buffer, eax 
 	.endw
+	_recv_endw:
 
 	mov ebx, n
 	mov eax, allBytes

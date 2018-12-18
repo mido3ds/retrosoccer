@@ -799,8 +799,9 @@ waitConnEvent proto event:dword
 send proto buffer:ptr byte, n:uint32
 
 ; - recieve and stores `n` bytes to `buffer` 
+; timeout: milliseconds to wait for a char
 ; eax=num of bytes received
-recv proto buffer:ptr byte, n:uint32
+recv proto buffer:ptr byte, n:uint32, timeout:uint32
 
 ; eax=TRUE|FALSE
 sendSig proto signal:byte
