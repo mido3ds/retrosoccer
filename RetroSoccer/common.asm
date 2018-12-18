@@ -44,7 +44,6 @@ __lastTickCount uint32 ?
 __randSeed uint32 ?
 __charInput uint32 ?
 __portNum uint32 ?
-__portHndl HANDLE ?
 __worldX int32 ?
 __worldY int32 ?
 
@@ -66,6 +65,8 @@ start proc
 	mov mousePos.y, 0
 
 	call openConnection
+
+	call createPortThread
 
 	mov   wc.cbSize, SIZEOF WNDCLASSEX                   
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
@@ -167,8 +168,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke onCreate
     .elseif uMsg==WM_DESTROY   
 		invoke KillTimer, __mainWnd, UPDATE_TIMER_ID
-		invoke onDestroy      
-		invoke closeConnection                  
+		call onDestroy      
+		call closeConnection                  
         invoke PostQuitMessage, NULL  		
 	.elseif uMsg==WM_ERASEBKGND 
 		mov eax, 1
@@ -429,6 +430,126 @@ stopAudio proc
     ret
 stopAudio endp
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Communication  							   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+_COMMUN_BUFFER_SIZE equ 1024
+_COMMUN_TIMEOUT equ 5 * 1000
+; events: 
+EV_RXCHAR                            equ 1h
+EV_RXFLAG                            equ 2h
+EV_TXEMPTY                           equ 4h
+EV_CTS                               equ 8h
+EV_DSR                               equ 10h
+EV_RLSD                              equ 20h
+EV_BREAK                             equ 40h
+EV_ERR                               equ 80h
+EV_RING                              equ 100h
+
+.const
+.data
+.data?
+_commun_isConnected bool TRUE
+_commun_readBuffer byte _COMMUN_BUFFER_SIZE dup(?)
+_commun_writeBuffer byte _COMMUN_BUFFER_SIZE dup(?)
+_commun_readIndex uint32 ?
+_commun_writeIndex uint32 ?
+_commun_userReadIndex uint32 ?
+_commun_userWriteIndex uint32 ?
+_commun_portHndl HANDLE ?
+_commun_portThreadHndl HANDLE ?
+
+.code
+_send proc 
+	local userWriteIndex:uint32, time:uint32, lastTick:uint32, numBytes:uint32
+
+	; userWriteIndex = _commun_userWriteIndex
+	mov eax, _commun_userWriteIndex
+	mov userWriteIndex, eax 
+
+
+	.repeat
+		; break when you reach userWriteIndex
+		mov eax, userWriteIndex
+		.if (_commun_writeIndex == eax)
+			mov eax, TRUE
+			ret
+		.endif
+
+		; lastTick = GetTickCount()
+		call GetTickCount
+		mov lastTick, eax
+
+		; ebx = &buffer[writeIndex]
+		mov ebx, offset _commun_writeBuffer
+		add ebx, _commun_writeIndex
+		invoke WriteFile, _commun_portHndl, ebx, 1, addr numBytes, NULL
+
+		; time += GetTickCount() - lastTick
+		call GetTickCount
+		sub eax, lastTick
+		add time, eax
+
+		; writeIndex += numBytes
+		; writeIndex %= BUFFER_SIZE
+		mov eax, numBytes
+		add _commun_writeIndex, eax
+		.if (_commun_writeIndex == _COMMUN_BUFFER_SIZE)
+			mov _commun_writeIndex, 0
+		.endif
+	.until (time >= _COMMUN_TIMEOUT)
+
+	mov eax, FALSE
+	ret
+_send endp
+
+_recv proc 
+	local lastTick:uint32, numBytesRead:uint32
+
+	.repeat
+		; ebx = &buffer[readIndex]
+		mov ebx, offset _commun_readBuffer
+		add ebx, _commun_readIndex
+		invoke ReadFile, _commun_portHndl, ebx, 1, addr numBytesRead, NULL
+
+		; readIndex++
+		; readIndex %= BUFFER_SIZE
+		mov eax, numBytesRead
+		add _commun_readIndex, eax
+		.if (_commun_readIndex == _COMMUN_BUFFER_SIZE)
+			mov _commun_readIndex, 0
+		.endif
+	.until numBytesRead == 0
+
+	ret
+_recv endp
+
+_commun_portThreadFun proc par:pntr
+	.while _commun_isConnected
+		call _send
+		.break .if (!eax)
+		call _recv
+	.endw
+	mov _commun_isConnected, FALSE
+	ret
+_commun_portThreadFun endp
+
+createPortThread proc
+	invoke CreateThread, NULL, NULL, offset _commun_portThreadFun, NULL, NULL, NULL
+	mov _commun_portThreadHndl, eax
+
+	printf ">> Opening port thread ",0
+	.if (_commun_portThreadHndl)
+		printfln "SUCCESS",0
+	.else	
+		printfln "FAIL",0
+		invoke ExitProcess, FAIL
+	.endif
+	
+	ret
+createPortThread endp
+
 openConnection proc 
 	local portDcb:DCB, portTimeouts:COMMTIMEOUTS
 
@@ -444,8 +565,8 @@ openConnection proc
 						0, NULL, OPEN_EXISTING,\
 						FILE_ATTRIBUTE_NORMAL, \                    
 			            NULL
-	mov __portHndl, eax
-	.if (__portHndl == INVALID_HANDLE_VALUE)
+	mov _commun_portHndl, eax
+	.if (_commun_portHndl == INVALID_HANDLE_VALUE)
 		printfln ">> port opening: FAIL",0
 		mov eax, FAIL
 		ret
@@ -454,7 +575,7 @@ openConnection proc
 
 	; port configuration
 	mov portDcb.DCBlength, sizeof DCB
-	invoke GetCommState, __portHndl, addr portDcb
+	invoke GetCommState, _commun_portHndl, addr portDcb
 	mov portDcb.BaudRate, CBR_256000		   	  ; baud rate
 	mov portDcb.ByteSize, 8				   		  ; byte size 
 	mov portDcb.Parity, ODDPARITY		   		  ; parity bit
@@ -476,9 +597,9 @@ openConnection proc
 	; TRUE,\  ; fParity:1					; Enable parity checking 
 	; TRUE>   ; fBinary:1					; Binary mode no EOF check
 
-	invoke SetCommState, __portHndl, addr portDcb
+	invoke SetCommState, _commun_portHndl, addr portDcb
 	.if (eax == 0)
-		invoke CloseHandle, __portHndl
+		invoke CloseHandle, _commun_portHndl
 		printfln ">> port configuration: FAIL", offset _oc_buf
 		mov eax, FAIL
 		ret
@@ -486,101 +607,64 @@ openConnection proc
 	printfln ">> port configuration: SUCCESS", offset _oc_buf
 
 	; timeout configuration
-	invoke GetCommTimeouts, __portHndl, addr portTimeouts
+	invoke GetCommTimeouts, _commun_portHndl, addr portTimeouts
 	mov portTimeouts.ReadIntervalTimeout, MAXDWORD
 	mov portTimeouts.ReadTotalTimeoutConstant, 0
 	mov portTimeouts.ReadTotalTimeoutMultiplier, 0
 	mov portTimeouts.WriteTotalTimeoutMultiplier, 0
 	mov portTimeouts.WriteTotalTimeoutConstant, 0
-	invoke SetCommTimeouts, __portHndl, addr portTimeouts
+	invoke SetCommTimeouts, _commun_portHndl, addr portTimeouts
 	.if (eax == 0)
-		invoke CloseHandle, __portHndl
+		invoke CloseHandle, _commun_portHndl
 		mov eax, FAIL
 		ret
 	.endif
 	printfln ">> timout configuration: SUCCESS",0
 
 	; clean port
-	invoke PurgeComm, __portHndl, PURGE_TXCLEAR or PURGE_RXCLEAR
+	invoke PurgeComm, _commun_portHndl, PURGE_TXCLEAR or PURGE_RXCLEAR
 	.if (eax == 0)
-		invoke CloseHandle, __portHndl
+		invoke CloseHandle, _commun_portHndl
 		printfln ">> clean port: FAIL",0
 		mov eax, FAIL
 		ret
 	.endif
 	printfln ">> clean port: SUCCESS",0
 	printfln ">> listening on port COM%i", __portNum
+	mov _commun_isConnected, TRUE
 
 	mov eax, SUCCESS
 	ret
 openConnection endp
 
 closeConnection proc
-    invoke CloseHandle, __portHndl
+    invoke CloseHandle, _commun_portHndl
     ret
 closeConnection endp
 
 send proc buffer:ptr byte, n:uint32
-    local numBytes:uint32
-	invoke WriteFile, __portHndl, buffer, n, addr numBytes, NULL
-	mov eax, numBytes
+    
     ret
 send endp
 
-recv proc buffer:ptr byte, n:uint32, timeout:uint32
-	local numBytesRead:uint32, allBytes:uint32, lastTick:uint32
-	mov eax, n
-	mov allBytes, eax
-	add timeout, 100;offset
+recv proc buffer:ptr byte, n:uint32
 	
-
-    .while n > 0
-		cmp timeout, 0
-		jl _recv_endw; break if timeout < 0
-
-		; lastTick = GetTickCount()
-		invoke GetTickCount
-		mov lastTick, eax
-
-		invoke ReadFile, __portHndl, buffer, n, addr numBytesRead, NULL
-
-		; timout -= GetTickCount() - lastTick
-		invoke GetTickCount
-		sub eax, lastTick
-		sub timeout, eax
-		
-		mov eax, numBytesRead
-		; n -= numBytesRead
-		sub n, eax 
-		; buffer += numBytesRead
-		add buffer, eax 
-	.endw
-	_recv_endw:
-
-	mov ebx, n
-	mov eax, allBytes
-	sub eax, ebx
     ret
 recv endp
 
-waitConnEvent proc event:dword
-	invoke SetCommMask, __portHndl, event
-	invoke WaitCommEvent , __portHndl, addr event, NULL
-	ret
-waitConnEvent endp
-
 sendSig proc signal:byte
-	local numBytes:uint32
-	invoke WriteFile, __portHndl, addr signal, 1, addr numBytes, NULL
+	
 	ret
 sendSig endp
 
 recvSig proc
-	local buffer:byte, numBytesRead:uint32
-	invoke ReadFile, __portHndl, addr buffer, 1, addr numBytesRead, NULL
-	mov al, buffer
+	
 	ret
 recvSig endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							Graphics    							   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 setWorldOrigin proc x:int32, y:int32
 	mov eax, x

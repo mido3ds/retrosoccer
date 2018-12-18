@@ -57,8 +57,6 @@ onDestroy proc
 	call connErrorScreen_onDestroy
 	call exitScreen_onDestroy
 
-	call closeConnection
-
 	ret
 onDestroy endp
 
@@ -286,7 +284,7 @@ sendName proc
 sendName endp
 
 recvName proc
-	invoke recv, offset opponentName, MAX_NAME_CHARS, 30 * 1000
+	invoke recv, offset opponentName, MAX_NAME_CHARS
 	.if (eax != MAX_NAME_CHARS)
 		invoke changeScreen, CONNEC_ERROR_SCREEN
 		printfln "recvName failed",0

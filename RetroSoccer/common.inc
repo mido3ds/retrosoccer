@@ -772,36 +772,16 @@ stopAudio proto
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Communication  							   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; eax = SUCCESS|FAILURE
-opeConnection proto 
-
-; eax = TRUE|FALSE
-closeConnection proto
-
-; blocks until event happens
-; events: 
-EV_RXCHAR                            equ 1h
-EV_RXFLAG                            equ 2h
-EV_TXEMPTY                           equ 4h
-EV_CTS                               equ 8h
-EV_DSR                               equ 10h
-EV_RLSD                              equ 20h
-EV_BREAK                             equ 40h
-EV_ERR                               equ 80h
-EV_RING                              equ 100h
-; for more info: https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-waitcommevent
-waitConnEvent proto event:dword
+isConnected proto
 
 ; - send `n` bytes of `buffer`
 ; eax=num of bytes sent
-; eax=SUCCESS|FAIL
+; eax=TRUE|FALSE
 send proto buffer:ptr byte, n:uint32
 
 ; - recieve and stores `n` bytes to `buffer` 
-; timeout: milliseconds to wait for a char
-; eax=num of bytes received
-recv proto buffer:ptr byte, n:uint32, timeout:uint32
+; eax=TRUE|FALSE
+recv proto buffer:ptr byte, n:uint32
 
 ; eax=TRUE|FALSE
 sendSig proto signal:byte
