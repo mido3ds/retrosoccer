@@ -446,6 +446,7 @@ openConnection proc
 			            NULL
 	mov __portHndl, eax
 	.if (__portHndl == INVALID_HANDLE_VALUE)
+		printfln ">> port opening: FAIL",0
 		mov eax, FAIL
 		ret
 	.endif
@@ -478,6 +479,7 @@ openConnection proc
 	invoke SetCommState, __portHndl, addr portDcb
 	.if (eax == 0)
 		invoke CloseHandle, __portHndl
+		printfln ">> port configuration: FAIL", offset _oc_buf
 		mov eax, FAIL
 		ret
 	.endif
@@ -485,11 +487,11 @@ openConnection proc
 
 	; timeout configuration
 	invoke GetCommTimeouts, __portHndl, addr portTimeouts
-	mov portTimeouts.ReadIntervalTimeout, 10;TODO choose correct timeout
-	mov portTimeouts.ReadTotalTimeoutConstant, 10
-	mov portTimeouts.ReadTotalTimeoutMultiplier, 1
-	mov portTimeouts.WriteTotalTimeoutMultiplier, 1
-	mov portTimeouts.WriteTotalTimeoutConstant, 10
+	mov portTimeouts.ReadIntervalTimeout, MAXDWORD
+	mov portTimeouts.ReadTotalTimeoutConstant, 0
+	mov portTimeouts.ReadTotalTimeoutMultiplier, 0
+	mov portTimeouts.WriteTotalTimeoutMultiplier, 0
+	mov portTimeouts.WriteTotalTimeoutConstant, 0
 	invoke SetCommTimeouts, __portHndl, addr portTimeouts
 	.if (eax == 0)
 		invoke CloseHandle, __portHndl
@@ -502,6 +504,7 @@ openConnection proc
 	invoke PurgeComm, __portHndl, PURGE_TXCLEAR or PURGE_RXCLEAR
 	.if (eax == 0)
 		invoke CloseHandle, __portHndl
+		printfln ">> clean port: FAIL",0
 		mov eax, FAIL
 		ret
 	.endif
