@@ -208,6 +208,7 @@ typenameScreen_onUpdate proc t:uint32
 	invoke getCharInput 
 	.if (eax == VK_RETURN)
 		.if (charIndex != 0)
+			invoke sendSig, SIG_CONNECT
 			invoke changeScreen, CONNECTING_SCREEN
 			printfln "going to connecting screen",0
 			ret
@@ -257,7 +258,6 @@ connectingScreen_onDraw proc
 connectingScreen_onDraw endp
 
 connectingScreen_onUpdate proc t:uint32
-	invoke sendSig, SIG_CONNECT
 	invoke recvSig
 	.if (!eax)
 		ret
@@ -286,7 +286,7 @@ sendName proc
 sendName endp
 
 recvName proc
-	invoke recv, offset opponentName, MAX_NAME_CHARS, 30 * 1000
+	invoke recv, offset opponentName, MAX_NAME_CHARS
 	.if (eax != MAX_NAME_CHARS)
 		invoke changeScreen, CONNEC_ERROR_SCREEN
 		printfln "recvName failed",0

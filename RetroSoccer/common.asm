@@ -487,11 +487,11 @@ openConnection proc
 
 	; timeout configuration
 	invoke GetCommTimeouts, __portHndl, addr portTimeouts
-	mov portTimeouts.ReadIntervalTimeout, MAXDWORD
-	mov portTimeouts.ReadTotalTimeoutConstant, 0
+	mov portTimeouts.ReadIntervalTimeout, 0
+	mov portTimeouts.ReadTotalTimeoutConstant, COMMUNIC_TIMEOUT
 	mov portTimeouts.ReadTotalTimeoutMultiplier, 0
 	mov portTimeouts.WriteTotalTimeoutMultiplier, 0
-	mov portTimeouts.WriteTotalTimeoutConstant, 0
+	mov portTimeouts.WriteTotalTimeoutConstant, COMMUNIC_TIMEOUT
 	invoke SetCommTimeouts, __portHndl, addr portTimeouts
 	.if (eax == 0)
 		invoke CloseHandle, __portHndl
@@ -521,45 +521,16 @@ closeConnection proc
 closeConnection endp
 
 send proc buffer:ptr byte, n:uint32
-    local numBytes:uint32
-	invoke WriteFile, __portHndl, buffer, n, addr numBytes, NULL
-	mov eax, numBytes
+    local numBytesSent:uint32
+	invoke WriteFile, __portHndl, buffer, n, addr numBytesSent, NULL
+	mov eax, numBytesSent
     ret
 send endp
 
-recv proc buffer:ptr byte, n:uint32, timeout:uint32
-	local numBytesRead:uint32, allBytes:uint32, lastTick:uint32
-	mov eax, n
-	mov allBytes, eax
-	add timeout, 100;offset
-	
-
-    .while n > 0
-		cmp timeout, 0
-		jl _recv_endw; break if timeout < 0
-
-		; lastTick = GetTickCount()
-		invoke GetTickCount
-		mov lastTick, eax
-
-		invoke ReadFile, __portHndl, buffer, n, addr numBytesRead, NULL
-
-		; timout -= GetTickCount() - lastTick
-		invoke GetTickCount
-		sub eax, lastTick
-		sub timeout, eax
-		
-		mov eax, numBytesRead
-		; n -= numBytesRead
-		sub n, eax 
-		; buffer += numBytesRead
-		add buffer, eax 
-	.endw
-	_recv_endw:
-
-	mov ebx, n
-	mov eax, allBytes
-	sub eax, ebx
+recv proc buffer:ptr byte, n:uint32
+	local numBytesRead:uint32
+	invoke ReadFile, __portHndl, buffer, n, addr numBytesRead, NULL
+	mov eax, numBytesRead
     ret
 recv endp
 
@@ -572,6 +543,7 @@ waitConnEvent endp
 sendSig proc signal:byte
 	local numBytes:uint32
 	invoke WriteFile, __portHndl, addr signal, 1, addr numBytes, NULL
+	;invoke GetLastError
 	ret
 sendSig endp
 
@@ -579,6 +551,9 @@ recvSig proc
 	local buffer:byte, numBytesRead:uint32
 	invoke ReadFile, __portHndl, addr buffer, 1, addr numBytesRead, NULL
 	mov al, buffer
+	.if (al > MAX_NUM_SIGNALS)
+		mov al, NULL
+	.endif
 	ret
 recvSig endp
 

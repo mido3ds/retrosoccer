@@ -58,7 +58,9 @@ SIG_CHAT_DATA 		equ 	13
 SIG_SEED 			equ 	14
 SIG_ERROR			equ 	15
 SIG_CANCEL_INV      equ     16
+MAX_NUM_SIGNALS 	equ 	31
 
+COMMUNIC_TIMEOUT equ 3 * 1000
 LOGO_SCREEN_TOTAL_TIME equ 0*1000
 GAME_OVER_SCREEN_TOTAL_TIME equ 7*1000
 MAX_NAME_CHARS equ 10
@@ -801,7 +803,7 @@ send proto buffer:ptr byte, n:uint32
 ; - recieve and stores `n` bytes to `buffer` 
 ; timeout: milliseconds to wait for a char
 ; eax=num of bytes received
-recv proto buffer:ptr byte, n:uint32, timeout:uint32
+recv proto buffer:ptr byte, n:uint32
 
 ; eax=TRUE|FALSE
 sendSig proto signal:byte
