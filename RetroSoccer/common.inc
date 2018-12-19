@@ -86,6 +86,8 @@ LV1_MATCH_TIME equ 120*1000
 LV1_BALL_SPD equ 3
 LV2_MATCH_TIME equ 80*1000
 LV2_BALL_SPD equ 7
+BALL_TYPE_1 equ 0
+BALL_TYPE_2 equ 1
 
 ; sprite sheet info
 SPR_BKG_CLR equ 5a5754h

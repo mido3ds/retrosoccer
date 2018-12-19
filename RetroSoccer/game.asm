@@ -9,11 +9,14 @@ public bluePen, redPen, sprites
 elapsedTime uint32 0
 previousScreen uint32 0
 currentScreen uint32 TYPENAME_SCREEN
-level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool FALSE
 chatAccepted bool FALSE
+
+selectedLevel uint32 1
+selectedBallType uint32 BALL_TYPE_1
+selectedColor uint32 PLAYER_COLOR_BLUE
 
 INVTYPE_CHAT equ 0
 INVTYPE_GAME equ 1
@@ -57,6 +60,7 @@ onDestroy proc
 	call connErrorScreen_onDestroy
 	call exitScreen_onDestroy
 
+	invoke sendSig, SIG_EXIT
 	call closeConnection
 
 	ret
@@ -98,7 +102,7 @@ onUpdate proc t:uint32
 	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
 	printf "f[%i,%i,%i,%i],", p1.stickIsSelected[0], p1.stickIsSelected[1], p1.stickIsSelected[2], p1.stickIsSelected[3]
 	printf "elapsedTime=%i,", elapsedTime
-	printf "level=%i,", level
+	printf "selectedLevel=%i,", selectedLevel
 
 	ret
 onUpdate endp
@@ -144,6 +148,14 @@ changeScreen proc screen:uint32
 	mov elapsedTime, 0
 	ret
 changeScreen endp
+
+goToPrevScreen proc
+	mov eax, previousScreen
+	mov currentScreen, eax
+	mov previousScreen, CONNEC_ERROR_SCREEN
+	mov elapsedTime, 0
+	ret
+goToPrevScreen endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Logo Screen     						   ;;
@@ -538,6 +550,10 @@ waitingScreen_onUpdate proc t:uint32
 	invoke recvSig
 	.if (eax)
 		.if (eax == SIG_GAME_START)
+			call recvGameInitialData
+
+			call initNonHostGameData
+
 			invoke changeScreen, GAME_SCREEN
 			printfln "game started, going to game screen",0
 			ret
@@ -550,19 +566,39 @@ waitingScreen_onUpdate proc t:uint32
 	ret
 waitingScreen_onUpdate endp
 
+recvGameInitialData proc
+	invoke recv, offset selectedLevel, 1
+	invoke recv, offset selectedColor, 1
+	invoke recv, offset selectedBallType, 1
+	; TODO check errors
+	ret
+recvGameInitialData endp
+
+initNonHostGameData proc
+	mov isHost, FALSE
+	; TODO
+	ret
+initNonHostGameData endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Select Screen	    					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-selectScreenFileName db "assets/mainScreen.bmp",0
+selectScreenFileName db "assets/selectScreen.bmp",0
+selectRectangleFileName db "assets/selectRectangle.bmp",0
 
 .data
 lvl1Btn Button <313, 237, 484, 300>
 lvl2Btn Button <313, 313, 484, 376>
+okBtn Button <>
+blueClrBtn Button <>
+redClrBtn Button <>
+ball1Btn Button <>
+ball2Btn Button <>;TODO
 
 .data?
 selectScreenBmp Bitmap ?
+selectRectangleBmp Bitmap ?
 
 .code
 selectScreen_onCreate proc
@@ -584,22 +620,74 @@ selectScreen_onDraw endp
 selectScreen_onUpdate proc t:uint32
 	invoke btn_isClicked, lvl1Btn
 	.if (eax) 
-		invoke ball_init, LV1_BALL_SPD
 		mov matchTotalTime, LV1_MATCH_TIME
-		mov level, 1
-		invoke changeScreen, GAME_SCREEN
+		mov selectedLevel, 1
 	.endif
-
 	invoke btn_isClicked, lvl2Btn
 	.if (eax)
-		invoke ball_init, LV2_BALL_SPD
 		mov matchTotalTime, LV2_MATCH_TIME
-		mov level, 2
+		mov selectedLevel, 2
+	.endif
+
+	invoke btn_isClicked, blueClrBtn
+	.if (eax)
+		mov selectedColor, PLAYER_COLOR_BLUE
+	.endif
+	invoke btn_isClicked, redClrBtn
+	.if (eax)
+		mov selectedColor, PLAYER_COLOR_RED
+	.endif
+
+	invoke btn_isClicked, ball1Btn
+	.if (eax)
+		mov selectedBallType, BALL_TYPE_1
+	.endif
+	invoke btn_isClicked, ball2Btn
+	.if (eax)
+		mov selectedBallType, BALL_TYPE_2
+	.endif
+
+	invoke btn_isClicked, okBtn
+	.if (eax)
+		mov isHost, TRUE
+		call hostInitGame
+
+		invoke sendSig, SIG_GAME_START
+		call sendGameInitialData
+
 		invoke changeScreen, GAME_SCREEN
+		printfln "ok clicked, going to game screen",0
 	.endif
 
 	ret
 selectScreen_onUpdate endp
+
+sendGameInitialData proc
+	local otherColor:uint32
+	invoke send, offset selectedLevel, 1
+	invoke send, addr otherColor, 1
+	invoke send, offset selectedBallType, 1
+	; TODO check errors
+	ret
+sendGameInitialData endp
+
+hostInitGame proc
+	; init ball
+	invoke vec_set, addr ball.pos, BALL_START_FIRST 
+	invoke vec_set, addr ball.spd, 0, 0
+	.if (selectedLevel == 1)
+		mov ball.speedScalar, LV1_BALL_SPD
+	.else 
+		mov ball.speedScalar, LV2_BALL_SPD
+	.endif
+	mov eax, selectedBallType
+	mov ball.ballType, eax
+
+	; init players
+	; TODO
+
+	ret
+hostInitGame endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Game Screen     						   ;;
@@ -733,7 +821,10 @@ gameoverScreen_onUpdate proc t:uint32
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= GAME_OVER_SCREEN_TOTAL_TIME)
+		invoke sendSig, SIG_GAME_FINISH
+
 		invoke changeScreen, MAIN_SCREEN
+		printfln "game ended, going to game over screen",0
 		mov elapsedTime, 0
 	.endif
 
@@ -800,6 +891,9 @@ chatScreen_onUpdate endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
 .data
+_ces_reconnectBtn Button <>
+_ces_exitBtn Button <> ; TODO
+
 .data?
 .code
 connErrorScreen_onCreate proc
@@ -818,6 +912,22 @@ connErrorScreen_onDraw proc
 connErrorScreen_onDraw endp
 
 connErrorScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, _ces_reconnectBtn
+	.if (eax)
+		invoke sendSig, SIG_CONNECT
+
+		invoke changeScreen, CONNECTING_SCREEN
+		printfln "going to connecting screen",0
+		ret
+	.endif
+
+	invoke btn_isClicked, _ces_exitBtn
+	.if (eax)
+		invoke sendSig, SIG_EXIT
+
+		call exit
+		printfln "going to exit",0
+	.endif
 
 	ret
 connErrorScreen_onUpdate endp
@@ -827,6 +937,9 @@ connErrorScreen_onUpdate endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
 .data
+_es_yesBtn Button <>
+_es_noBtn Button <> ; TODO
+
 .data?
 .code
 exitScreen_onCreate proc
@@ -845,6 +958,17 @@ exitScreen_onDraw proc
 exitScreen_onDraw endp
 
 exitScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, _es_yesBtn
+	.if (eax)
+		call exit
+		printfln "going to exit",0
+	.endif
+
+	invoke btn_isClicked, _es_noBtn
+	.if (eax)
+		call goToPrevScreen
+		printfln "exit canceled, going to previous screen",0
+	.endif
 
 	ret
 exitScreen_onUpdate endp

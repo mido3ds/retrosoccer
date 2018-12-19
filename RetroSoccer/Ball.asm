@@ -13,11 +13,8 @@ ball Ball <>
 .code
 ball_asm:
 
-ball_init proc speedScalar:int32
-	invoke vec_set, addr ball.pos, BALL_START_FIRST ; TODO detect who is first
-	invoke vec_set,  addr ball.spd, 0, 0
-	push speedScalar
-	pop ball.speedScalar
+ball_init proc isHost:bool, selectedLevel:uint32, ballType:uint32 ; TODO
+	
 
     ret
 ball_init endp
