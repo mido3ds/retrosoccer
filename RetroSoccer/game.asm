@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 TYPENAME_SCREEN
+currentScreen uint32 LOGO_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool FALSE
@@ -161,33 +161,49 @@ goToPrevScreen endp
 ;;							Logo Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+logoScreenFileName db "assets/logoScreen.bmp",0
+
 .data
+_lc_alphaDir byte 1
+
 .data?
+_lc_alpha byte ?
+_lc_logoScreenBmp Bitmap ?
+_lc_canExit bool ?
+
 .code
 logoScreen_onCreate proc
-	
+	invoke loadBitmap, offset logoScreenFileName
+	mov _lc_logoScreenBmp, eax
 	ret
 logoScreen_onCreate endp
 
 logoScreen_onDestroy proc
-	
+	invoke deleteBitmap, _lc_logoScreenBmp
 	ret
 logoScreen_onDestroy endp
 
 logoScreen_onDraw proc
+	invoke clearScreen, 0 ; white
+	invoke alphaBlend, _lc_logoScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT, _lc_alpha
 	ret
 logoScreen_onDraw endp
 
 logoScreen_onUpdate proc t:uint32
 	invoke isKeyPressed, VK_RETURN
-	.if (eax || elapsedTime >= LOGO_SCREEN_TOTAL_TIME)
+	.if (eax || (_lc_alpha == 0 && _lc_canExit))
 		invoke changeScreen, TYPENAME_SCREEN
 		printfln "going to typename screen",0
 		ret
 	.endif
 
-	mov eax, t
-	add elapsedTime, eax
+	mov al, _lc_alphaDir
+	add _lc_alpha, al
+	add _lc_alpha, al
+	.if (_lc_alpha == 254)
+		mov _lc_alphaDir, -1
+		mov _lc_canExit, TRUE
+	.endif
 	ret
 logoScreen_onUpdate endp
 
@@ -221,11 +237,12 @@ typenameScreen_onDraw proc
 typenameScreen_onDraw endp
 
 typenameScreen_onUpdate proc t:uint32
+	local okBtnIsClicked:bool
 	invoke btn_isClicked, ok
-	push ebx
+	mov okBtnIsClicked, al
+
 	invoke getCharInput 
-	pop ebx
-	.if (ebx || eax == VK_RETURN)
+	.if (eax == VK_RETURN || okBtnIsClicked)
 		.if (charIndex != 0)
 			invoke sendSig, SIG_CONNECT
 			invoke changeScreen, CONNECTING_SCREEN
@@ -929,6 +946,8 @@ chatScreen_onDraw proc
 chatScreen_onDraw endp
 
 chatScreen_onUpdate proc t:uint32
+	local sendIsClicked:bool
+
 	invoke recvSig
 	.if (eax) 
 		.if (eax == SIG_CHAT_DATA)
@@ -956,10 +975,9 @@ chatScreen_onUpdate proc t:uint32
 	; send msg
 	.if (_cs_i > 0)
 		invoke btn_isClicked, _cs_sendBtn
-		push eax
+		mov sendIsClicked, al
 		invoke isKeyPressed, VK_RETURN
-		pop ebx
-		.if (eax || ebx)
+		.if (eax || sendIsClicked)
 			invoke sendSig, SIG_CHAT_DATA
 			call sendChatData
 		.endif 
