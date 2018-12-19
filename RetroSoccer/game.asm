@@ -888,26 +888,48 @@ writeFinalResult endp
 ;;							Chat Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+chatScreenFileName db "assets/chatScreen.bmp",0
+
 .data
+_cs_closeBtn Button <10,5,57,53>
+_cs_sendBtn Button <736,458,785,497>
+
 .data?
+chatScreenBmp Bitmap ?
+
 .code
 chatScreen_onCreate proc
-	
+	invoke loadBitmap, offset chatScreenFileName
+	mov chatScreenBmp, eax
 	ret
 chatScreen_onCreate endp
 
 chatScreen_onDestroy proc
-	
+	invoke deleteBitmap, chatScreenBmp
 	ret
 chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
-
+	invoke renderBitmap, chatScreenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
 	ret
 chatScreen_onDraw endp
 
 chatScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, _cs_closeBtn
+	.if (eax)
+		invoke sendSig, SIG_CHAT_CLOSE
+		invoke changeScreen, MAIN_SCREEN
+		printfln "going to main screen",0
+	.endif
 
+	invoke btn_isClicked, _cs_sendBtn
+	push eax
+	invoke isKeyPressed, VK_RETURN
+	pop ebx
+	.if (eax || ebx)
+		invoke sendSig, SIG_CHAT_DATA
+		;TODO
+	.endif 
 	ret
 chatScreen_onUpdate endp
 
