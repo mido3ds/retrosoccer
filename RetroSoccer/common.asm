@@ -1076,4 +1076,9 @@ btn_isHovered proc b:Button
 	ret
 btn_isHovered endp
 
+list_insert proc l:ptr Node, n:ptr Node
+	; TODO
+	ret
+list_insert endp
+
 end start

@@ -105,6 +105,7 @@ SPR_BLUE_LEG2 equ <0,0,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
 SPR_RED_LEG1 equ <19,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
 SPR_RED_LEG2 equ <0,31,SPR_LEG_WIDTH,SPR_LEG_HEIGHT,SPR_BKG_CLR>
 SPR_BALL equ <80,0,SPR_BALL_LEN,SPR_BALL_LEN,SPR_BKG_CLR>
+SPR_BALL2 equ <80,SPR_BALL_LEN,SPR_BALL_LEN,SPR_BALL_LEN,SPR_BKG_CLR>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							types   								   ;;
@@ -142,6 +143,18 @@ vec_neg proto v:ptr Vec
 vec_smul proto s:uint32, v:ptr Vec
 vec_cpy proto dest:ptr Vec, src:ptr Vec
 vec_set proto v:ptr Vec, x:int32, y:int32
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							List		   							   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Node STRUCT
+	value pntr ?
+	next pntr ?
+	prev pntr ?
+Node ENDS
+
+list_insert proto l:ptr Node, n:ptr Node
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Bounding Box  							   ;;

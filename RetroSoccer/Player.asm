@@ -205,7 +205,10 @@ player1_updateFigs proc
 player1_updateFigs endp
 
 player1_send proc
-	
+	invoke send, offset p1.stickPos, 4 * sizeof Vec
+	invoke send, offset p1.figPos, 11 * sizeof Vec
+	invoke send, offset p1.legPos, 11 * sizeof Vec
+	; TODO check for errors
 	ret
 player1_send endp
 
@@ -288,7 +291,10 @@ player2_draw proc
 player2_draw endp
 
 player2_recv proc
-	
+	invoke recv, offset p2.stickPos, 4 * sizeof Vec
+	invoke recv, offset p2.figPos, 11 * sizeof Vec
+	invoke recv, offset p2.legPos, 11 * sizeof Vec
+	; TODO check for errors
 	ret
 player2_recv endp
 

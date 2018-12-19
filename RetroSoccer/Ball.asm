@@ -13,14 +13,12 @@ ball Ball <>
 .code
 ball_asm:
 
-ball_init proc isHost:bool, selectedLevel:uint32, ballType:uint32 ; TODO
-	
-
-    ret
-ball_init endp
-
 ball_draw proc 
-	invoke renderTBitmap, sprites, ball.pos.x, ball.pos.y, SPR_BALL
+	.if (ball.ballType == BALL_TYPE_1)
+		invoke renderTBitmap, sprites, ball.pos.x, ball.pos.y, SPR_BALL
+	.else 
+		invoke renderTBitmap, sprites, ball.pos.x, ball.pos.y, SPR_BALL2
+	.endif
     ret
 ball_draw endp
 
@@ -96,12 +94,16 @@ ball_update proc
 ball_update endp
 
 ball_send proc 
-
+	invoke send, offset ball.pos, sizeof Vec
+	invoke send, offset ball.spd, sizeof Vec
+	; TODO check for errors
     ret
 ball_send endp
 
 ball_recv proc 
-
+	invoke recv, offset ball.pos, sizeof Vec
+	invoke recv, offset ball.spd, sizeof Vec
+	; TODO check for errors
     ret
 ball_recv endp
 

@@ -550,6 +550,7 @@ waitingScreen_onUpdate proc t:uint32
 	invoke recvSig
 	.if (eax)
 		.if (eax == SIG_GAME_START)
+			mov isHost, FALSE
 			call recvGameInitialData
 
 			call initNonHostGameData
@@ -575,8 +576,30 @@ recvGameInitialData proc
 recvGameInitialData endp
 
 initNonHostGameData proc
-	mov isHost, FALSE
-	; TODO
+	; init ball
+	invoke vec_set, addr ball.pos, BALL_START_SEC
+	invoke vec_set, addr ball.spd, 0, 0
+	.if (selectedLevel == 1)
+		mov ball.speedScalar, LV1_BALL_SPD
+	.else 
+		mov ball.speedScalar, LV2_BALL_SPD
+	.endif
+	mov eax, selectedBallType
+	mov ball.ballType, eax
+
+	; init players
+	invoke player1_reset
+	invoke player2_reset
+
+	; p2
+	mov eax, selectedColor
+	mov p2.color, eax
+
+	; get my color
+	mov eax, 1
+	sub eax, selectedColor
+	; p1
+	mov p2.color, eax
 	ret
 initNonHostGameData endp
 
@@ -650,7 +673,7 @@ selectScreen_onUpdate proc t:uint32
 	invoke btn_isClicked, okBtn
 	.if (eax)
 		mov isHost, TRUE
-		call hostInitGame
+		call initHostGameData
 
 		invoke sendSig, SIG_GAME_START
 		call sendGameInitialData
@@ -663,15 +686,14 @@ selectScreen_onUpdate proc t:uint32
 selectScreen_onUpdate endp
 
 sendGameInitialData proc
-	local otherColor:uint32
 	invoke send, offset selectedLevel, 1
-	invoke send, addr otherColor, 1
+	invoke send, offset selectedColor, 1
 	invoke send, offset selectedBallType, 1
 	; TODO check errors
 	ret
 sendGameInitialData endp
 
-hostInitGame proc
+initHostGameData proc
 	; init ball
 	invoke vec_set, addr ball.pos, BALL_START_FIRST 
 	invoke vec_set, addr ball.spd, 0, 0
@@ -684,10 +706,20 @@ hostInitGame proc
 	mov ball.ballType, eax
 
 	; init players
-	; TODO
+	invoke player1_reset
+	invoke player2_reset
 
+	; p1
+	mov eax, selectedColor
+	mov p1.color, eax
+
+	; get other color
+	mov eax, 1
+	sub eax, selectedColor
+	; p2
+	mov p2.color, eax
 	ret
-hostInitGame endp
+initHostGameData endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Game Screen     						   ;;
@@ -714,13 +746,6 @@ gameScreen_onCreate proc
 	mov bluePen, eax
 	invoke createPen, 3, 0000ffh ;red
 	mov redPen, eax
-
-	; players
-	invoke player1_reset
-	mov p1.color, PLAYER_COLOR_BLUE
-	invoke player2_reset
-	mov p2.color, PLAYER_COLOR_RED
-
 	ret
 gameScreen_onCreate endp
 
