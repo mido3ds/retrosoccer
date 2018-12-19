@@ -11,7 +11,7 @@ previousScreen uint32 0
 currentScreen uint32 LOGO_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
-isHost bool FALSE
+isHost bool ?
 chatAccepted bool FALSE
 
 selectedLevel uint32 1
@@ -168,24 +168,24 @@ _lc_alphaDir byte 1
 
 .data?
 _lc_alpha byte ?
-_lc_logoScreenBmp Bitmap ?
+_lc_screenBmp Bitmap ?
 _lc_canExit bool ?
 
 .code
 logoScreen_onCreate proc
 	invoke loadBitmap, offset logoScreenFileName
-	mov _lc_logoScreenBmp, eax
+	mov _lc_screenBmp, eax
 	ret
 logoScreen_onCreate endp
 
 logoScreen_onDestroy proc
-	invoke deleteBitmap, _lc_logoScreenBmp
+	invoke deleteBitmap, _lc_screenBmp
 	ret
 logoScreen_onDestroy endp
 
 logoScreen_onDraw proc
 	invoke clearScreen, 0 ; white
-	invoke alphaBlend, _lc_logoScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT, _lc_alpha
+	invoke alphaBlend, _lc_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT, _lc_alpha
 	ret
 logoScreen_onDraw endp
 
@@ -211,58 +211,61 @@ logoScreen_onUpdate endp
 ;;							Type Name Screen						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-typeYourNameStr db "assets/typeNameScreen.bmp",0
-.data
-ok Button <364, 298, 437, 339>
+typeNameScreenFileName db "assets/typeNameScreen.bmp",0
 
-charIndex uint32 0
+.data
+_tns_okBtn Button <364, 298, 437, 339>
+
 .data?
-NameScreenBmp Bitmap ?
+_tns_screenBmp Bitmap ?
+_tns_i uint32 ?
+
 .code
 typenameScreen_onCreate proc
-	invoke loadBitmap, offset typeYourNameStr
-	mov NameScreenBmp, eax
+	invoke loadBitmap, offset typeNameScreenFileName
+	mov _tns_screenBmp, eax
 	ret
 typenameScreen_onCreate endp
 
 typenameScreen_onDestroy proc
-	invoke deleteBitmap, NameScreenBmp
+	invoke deleteBitmap, _tns_screenBmp
 	ret
 typenameScreen_onDestroy endp
 
 typenameScreen_onDraw proc
-	invoke renderBitmap, NameScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke setBkMode, TRANSPARENT
+	invoke renderBitmap, _tns_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	invoke drawText, offset userName, 309, 220, 495, 247, DT_CENTER or DT_TOP
 	ret
 typenameScreen_onDraw endp
 
 typenameScreen_onUpdate proc t:uint32
 	local okBtnIsClicked:bool
-	invoke btn_isClicked, ok
+	invoke btn_isClicked, _tns_okBtn
 	mov okBtnIsClicked, al
 
 	invoke getCharInput 
 	.if (eax == VK_RETURN || okBtnIsClicked)
-		.if (charIndex != 0)
+		.if (_tns_i != 0)
 			invoke sendSig, SIG_CONNECT
 			invoke changeScreen, CONNECTING_SCREEN
 			printfln "going to connecting screen",0
 			ret
 		.endif
 	.elseif (eax == VK_BACK)
-		.if (charIndex != 0)
-			dec charIndex
-			mov ebx, charIndex
+		.if (_tns_i != 0)
+			dec _tns_i
+			mov ebx, _tns_i
 			mov userName[ebx], 0
 			ret
 		.endif
 	.elseif (eax == VK_ESCAPE || eax == VK_TAB) ;ignore those buttons
 		ret
 	.elseif (eax != NULL)
-		.if (charIndex < MAX_NAME_CHARS)
-			mov ebx, charIndex
+		.if (_tns_i < MAX_NAME_CHARS)
+			mov ebx, _tns_i
 			mov userName[ebx], al
-			inc charIndex
+			inc _tns_i
 		.endif
 	.endif
 
@@ -273,25 +276,26 @@ typenameScreen_onUpdate endp
 ;;							Connecting Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-connectScreen db "assets/ConnectScreen.bmp", 0
+connectScreenFileName db "assets/ConnectingScreen.bmp", 0
 
 .data
 .data?
-ConnectScreenBmp Bitmap ?
+_cs_screenBmp Bitmap ?
+
 .code
 connectingScreen_onCreate proc
-	invoke loadBitmap, offset connectScreen
-	mov ConnectScreenBmp, eax
+	invoke loadBitmap, offset connectScreenFileName
+	mov _cs_screenBmp, eax
 	ret
 connectingScreen_onCreate endp
 
 connectingScreen_onDestroy proc
-	invoke deleteBitmap, ConnectScreenBmp
+	invoke deleteBitmap, _cs_screenBmp
 	ret
 connectingScreen_onDestroy endp
 
 connectingScreen_onDraw proc
-	invoke renderBitmap,ConnectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, _cs_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 connectingScreen_onDraw endp
 
@@ -306,8 +310,8 @@ connectingScreen_onUpdate proc t:uint32
 
 		printfln "userName=%s,opponentName=%s", offset userName, offset opponentName
 	.else
+		printfln "connectingScreen_onUpdate failed, SIG=%i",eax
 		invoke changeScreen, CONNEC_ERROR_SCREEN
-		printfln "connectingScreen_onUpdate failed",0
 	.endif
 
 	ret
@@ -337,29 +341,30 @@ recvName endp
 ;;							Main Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-MainScreen db "assets/mainScreen.bmp",0
+mainScreenFileName db "assets/mainScreen.bmp",0
 
 .data
-playBtn Button <349, 224, 450, 272>
-chatBtn Button <345, 289, 452, 337>
-exitBtn Button <350, 355, 452, 401>
+_ms_playBtn Button <349, 224, 450, 272>
+_ms_chatBtn Button <345, 289, 452, 337>
+_ms_exitBtn Button <350, 355, 452, 401>
+
 .data?
-MainScreenBmp Bitmap ?
+_ms_screenBmp Bitmap ?
 
 .code
 mainScreen_onCreate proc
-	invoke loadBitmap, offset MainScreen
-	mov MainScreenBmp, eax
+	invoke loadBitmap, offset mainScreenFileName
+	mov _ms_screenBmp, eax
 	ret
 mainScreen_onCreate endp
 
 mainScreen_onDestroy proc
-	invoke deleteBitmap, MainScreenBmp
+	invoke deleteBitmap, _ms_screenBmp
 	ret
 mainScreen_onDestroy endp
 
 mainScreen_onDraw proc
-	invoke renderBitmap, MainScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, _ms_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 mainScreen_onDraw endp
 
@@ -381,13 +386,13 @@ mainScreen_onUpdate proc t:uint32
 			printfln "going to connecting screen[exit]",0
 			ret
 		.elseif
+			printfln "mainScreen_onUpdate failed, SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "mainScreen_onUpdate failed",0
 			ret
 		.endif
 	.endif
 
-	invoke btn_isClicked, playBtn
+	invoke btn_isClicked, _ms_playBtn
 	.if (eax)
 		invoke sendSig, SIG_GAME_INV
 		invoke changeScreen, SEND_INV_SCREEN
@@ -395,7 +400,7 @@ mainScreen_onUpdate proc t:uint32
 		printfln "going to send invitation screen[game]",0
 	.endif
 
-	invoke btn_isClicked, chatBtn
+	invoke btn_isClicked, _ms_chatBtn
 	.if (eax)
 		invoke sendSig, SIG_CHAT_INV
 		invoke changeScreen, SEND_INV_SCREEN
@@ -403,9 +408,8 @@ mainScreen_onUpdate proc t:uint32
 		printfln "going to send invitation screen[chat]",0
 	.endif
 
-	invoke btn_isClicked, exitBtn
+	invoke btn_isClicked, _ms_exitBtn
 	.if (eax)
-		invoke sendSig, SIG_EXIT
 		invoke changeScreen, EXIT_SCREEN
 		printfln "going to exit screen",0
 	.endif
@@ -416,29 +420,28 @@ mainScreen_onUpdate endp
 ;;							Send Invitation Screen     				   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+snedInvitationScreenFileName db "assets/sendInvitationScreen.bmp",0
 
-sendingInvStr db "assets/sendInvitationScreen.bmp",0
-cancelStr db "[Cancel]",0
 .data
-cancelBtn Button <339, 301, 461, 350>
+_sis_cancelBtn Button <339, 301, 461, 350>
+
 .data?
-SendInvitationBmp Bitmap ?
+_sis_screenBmp Bitmap ?
 
 .code
 sendInvitationScreen_onCreate proc
-	invoke loadBitmap, offset sendingInvStr
-	mov SendInvitationBmp, eax
+	invoke loadBitmap, offset snedInvitationScreenFileName
+	mov _sis_screenBmp, eax
 	ret
 sendInvitationScreen_onCreate endp
 
 sendInvitationScreen_onDestroy proc
-	invoke deleteBitmap, SendInvitationBmp
+	invoke deleteBitmap, _sis_screenBmp
 	ret
 sendInvitationScreen_onDestroy endp
 
 sendInvitationScreen_onDraw proc
-invoke renderBitmap, SendInvitationBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
-	
+	invoke renderBitmap, _sis_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 sendInvitationScreen_onDraw endp
 
@@ -462,12 +465,13 @@ sendInvitationScreen_onUpdate proc t:uint32
 			printfln "invitation declined, going back to main screen",0
 			ret
 		.else
+			printfln "snedInvitationScreen_onUpdate failed, SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "snedInvitationScreen_onUpdate failed",0
+			ret
 		.endif
 	.endif
 
-	invoke btn_isClicked, cancelBtn
+	invoke btn_isClicked, _sis_cancelBtn
 	.if (eax)
 		invoke sendSig, SIG_CANCEL_INV
 		invoke changeScreen, MAIN_SCREEN
@@ -480,24 +484,30 @@ sendInvitationScreen_onUpdate endp
 ;;						Receive Invitation Screen        			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-acceptStr db "Accept",0
-declineStr db "Decline",0
+receiveInvScreenFileName db "assets/recvInvitationScreen.bmp",0
+
 .data
-acceptBtn Button <305, 156, 305+200, 156+30>
-declineBtn Button <305, 156+30, 305+200, 156+30+30>
+_ris_acceptBtn Button <256, 300, 385, 354>
+_ris_declineBtn Button <417, 300, 542, 354>
+
 .data?
+_ris_screenBmp Bitmap ?
+
 .code
 recvInvitationScreen_onCreate proc
-	
+	invoke loadBitmap, offset receiveInvScreenFileName
+	mov _ris_screenBmp, eax
 	ret
 recvInvitationScreen_onCreate endp
 
 recvInvitationScreen_onDestroy proc
-	
+	invoke deleteBitmap, _ris_screenBmp
 	ret
 recvInvitationScreen_onDestroy endp
 
 recvInvitationScreen_onDraw proc
+	invoke renderBitmap, _ris_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+
 	; draw main text
 	.const 
 	_ris_mainTextFormat_game byte "%s Sent You Game Invitation",0
@@ -510,7 +520,8 @@ recvInvitationScreen_onDraw proc
 	.else
 		invoke sprintf, offset _ris_buf, offset _ris_mainTextFormat_game, offset opponentName
 	.endif
-	invoke drawText, offset _ris_buf, 233, 176, 538,256, DT_LEFT or DT_CENTER
+	invoke setBkMode, TRANSPARENT
+	invoke drawText, offset _ris_buf, 215, 211, 574, 277, DT_CENTER
 
 	ret
 recvInvitationScreen_onDraw endp
@@ -521,13 +532,15 @@ recvInvitationScreen_onUpdate proc t:uint32
 		.if (eax == SIG_CANCEL_INV)
 			invoke changeScreen, MAIN_SCREEN
 			printfln "invitation canceled, going back to main screen",0
+			ret
 		.else
+			printfln "recvInvitationScreen_onUpdate failed, goint to connec error screen, SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "recvInvitationScreen_onUpdate failed, goint to connec error screen",0
+			ret
 		.endif
 	.endif
 
-	invoke btn_isClicked, acceptBtn
+	invoke btn_isClicked, _ris_acceptBtn
 	.if (eax)
 		invoke sendSig, SIG_ACCEPT_INV
 
@@ -540,7 +553,7 @@ recvInvitationScreen_onUpdate proc t:uint32
 		.endif
 	.endif
 
-	invoke btn_isClicked, declineBtn
+	invoke btn_isClicked, _ris_declineBtn
 	.if (eax)
 		invoke sendSig, SIG_DECLINE_INV
 		invoke changeScreen, MAIN_SCREEN
@@ -553,25 +566,26 @@ recvInvitationScreen_onUpdate endp
 ;;						Waiting Opponent Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-waitingOpStr db "assets/waitOpScreen.bmp",0
+waitOpScreenFileName db "assets/waitOpScreen.bmp",0
+
 .data
 .data?
-WaitingOpponentBmp Bitmap ?
+_wos_screenBmp Bitmap ?
+
 .code
 waitingScreen_onCreate proc
-	invoke loadBitmap, offset waitingOpStr
-	mov WaitingOpponentBmp, eax
+	invoke loadBitmap, offset waitOpScreenFileName
+	mov _wos_screenBmp, eax
 	ret
 waitingScreen_onCreate endp
 
 waitingScreen_onDestroy proc
-	invoke deleteBitmap, WaitingOpponentBmp
+	invoke deleteBitmap, _wos_screenBmp
 	ret
 waitingScreen_onDestroy endp
 
 waitingScreen_onDraw proc
-invoke renderBitmap, WaitingOpponentBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
-	invoke drawText, offset waitingOpStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke renderBitmap, _wos_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 waitingScreen_onDraw endp
 
@@ -588,8 +602,8 @@ waitingScreen_onUpdate proc t:uint32
 			printfln "game started, going to game screen",0
 			ret
 		.else
+			printfln "waitingScreen_onUpdate failed, going to connec error screen, SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "waitingScreen_onUpdate failed, going to connec error screen",0
 			ret
 		.endif
 	.endif
@@ -635,72 +649,100 @@ initNonHostGameData endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Select Screen	    					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+_SS_ROUND_RADIUS equ <9,9>
+
 .const
 selectScreenFileName db "assets/selectScreen.bmp",0
-selectRectangleFileName db "assets/selectRectangle.bmp",0
 
 .data
-lvl1Btn Button <313, 237, 484, 300>
-lvl2Btn Button <313, 313, 484, 376>
-okBtn Button <>
-blueClrBtn Button <>
-redClrBtn Button <>
-ball1Btn Button <>
-ball2Btn Button <>;TODO
+_ss_lvl1Btn Button <397, 170, 435, 207>
+_ss_lvl2Btn Button <462, 170, 499, 208>
+_ss_okBtn Button <361, 352, 436, 400>
+_ss_blueClrBtn Button <466, 232, 502, 267>
+_ss_redClrBtn Button <398, 232, 434, 268>
+_ss_ball1Btn Button <399, 289, 436, 327>
+_ss_ball2Btn Button <465, 288, 502, 326>
 
 .data?
-selectScreenBmp Bitmap ?
-selectRectangleBmp Bitmap ?
+_ss_screenBmp Bitmap ?
 
 .code
 selectScreen_onCreate proc
 	invoke loadBitmap, offset selectScreenFileName
-	mov selectScreenBmp, eax
+	mov _ss_screenBmp, eax
 	ret
 selectScreen_onCreate endp
 
 selectScreen_onDestroy proc
-	invoke deleteBitmap, selectScreenBmp
+	invoke deleteBitmap, _ss_screenBmp
 	ret
 selectScreen_onDestroy endp
 
 selectScreen_onDraw proc
-	invoke renderBitmap, selectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, _ss_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+
+	; TODO: draw better rect, with no white background
+	.if (selectedLevel == 1)
+		; invoke drawRoundRect, _ss_lvl1Btn.x0, _ss_lvl1Btn.y0, _ss_lvl1Btn.x1, _ss_lvl1Btn.y1, _SS_ROUND_RADIUS
+		invoke drawFrameRect, offset _ss_lvl1Btn
+	.else
+		; invoke drawRoundRect, _ss_lvl2Btn.x0, _ss_lvl2Btn.y0, _ss_lvl2Btn.x1, _ss_lvl2Btn.y1, _SS_ROUND_RADIUS
+		invoke drawFrameRect, offset _ss_lvl2Btn
+	.endif
+
+	.if (selectedColor == PLAYER_COLOR_BLUE)
+		; invoke drawRoundRect, _ss_blueClrBtn.x0, _ss_blueClrBtn.y0, _ss_blueClrBtn.x1, _ss_blueClrBtn.y1, _SS_ROUND_RADIUS
+		invoke drawFrameRect, offset _ss_blueClrBtn
+	.else
+		; invoke drawRoundRect, _ss_redClrBtn.x0, _ss_redClrBtn.y0, _ss_redClrBtn.x1, _ss_redClrBtn.y1, _SS_ROUND_RADIUS
+		invoke drawFrameRect, offset _ss_redClrBtn
+	.endif
+
+	.if (selectedBallType == BALL_TYPE_1)
+		; invoke drawRoundRect, _ss_ball1Btn.x0, _ss_ball1Btn.y0, _ss_ball1Btn.x1, _ss_ball1Btn.y1, _SS_ROUND_RADIUS
+		invoke drawFrameRect, offset _ss_ball1Btn
+	.else
+		; invoke drawRoundRect, _ss_ball2Btn.x0, _ss_ball2Btn.y0, _ss_ball2Btn.x1, _ss_ball2Btn.y1, _SS_ROUND_RADIUS
+		invoke drawFrameRect, offset _ss_ball2Btn
+	.endif
+
 	ret
 selectScreen_onDraw endp
 
 selectScreen_onUpdate proc t:uint32
-	invoke btn_isClicked, lvl1Btn
+	invoke btn_isClicked, _ss_lvl1Btn
 	.if (eax) 
 		mov matchTotalTime, LV1_MATCH_TIME
 		mov selectedLevel, 1
 	.endif
-	invoke btn_isClicked, lvl2Btn
+	invoke btn_isClicked, _ss_lvl2Btn
 	.if (eax)
 		mov matchTotalTime, LV2_MATCH_TIME
 		mov selectedLevel, 2
 	.endif
 
-	invoke btn_isClicked, blueClrBtn
+	invoke btn_isClicked, _ss_blueClrBtn
 	.if (eax)
 		mov selectedColor, PLAYER_COLOR_BLUE
 	.endif
-	invoke btn_isClicked, redClrBtn
+	invoke btn_isClicked, _ss_redClrBtn
 	.if (eax)
 		mov selectedColor, PLAYER_COLOR_RED
 	.endif
 
-	invoke btn_isClicked, ball1Btn
+	invoke btn_isClicked, _ss_ball1Btn
 	.if (eax)
 		mov selectedBallType, BALL_TYPE_1
 	.endif
-	invoke btn_isClicked, ball2Btn
+	invoke btn_isClicked, _ss_ball2Btn
 	.if (eax)
 		mov selectedBallType, BALL_TYPE_2
 	.endif
-
-	invoke btn_isClicked, okBtn
+	
+	invoke btn_isClicked, _ss_okBtn
 	.if (eax)
+		printfln "selectedLevel=%i,selectedColor=%i,selectedBallType=%i",selectedLevel, selectedColor, selectedBallType
+
 		mov isHost, TRUE
 		call initHostGameData
 
@@ -850,22 +892,22 @@ gameOverScreenFileName db "assets/gameOverScreen.bmp",0
 
 .data
 .data?
-gameOverScreenBmp Bitmap ?
+_gs_screenBmp Bitmap ?
 
 .code
 gameoverScreen_onCreate proc
 	invoke loadBitmap, offset gameOverScreenFileName
-	mov gameOverScreenBmp, eax
+	mov _gs_screenBmp, eax
 	ret
 gameoverScreen_onCreate endp
 
 gameoverScreen_onDestroy proc
-	invoke deleteBitmap, gameOverScreenBmp
+	invoke deleteBitmap, _gs_screenBmp
 	ret
 gameoverScreen_onDestroy endp
 
 gameoverScreen_onDraw proc
-	invoke renderBitmap, gameOverScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, _gs_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	call writeFinalResult
 	ret
 gameoverScreen_onDraw endp
@@ -920,28 +962,28 @@ writeFinalResult endp
 chatScreenFileName db "assets/chatScreen.bmp",0
 
 .data
-_cs_closeBtn Button <10,5,57,53>
-_cs_sendBtn Button <736,458,785,497>
+_chs_closeBtn Button <10,5,57,53>
+_chs_sendBtn Button <736,458,785,497>
 
 .data?
-chatScreenBmp Bitmap ?
-_cs_buffer db CHAT_BUFFER_SIZE dup(?)
-_cs_i uint32 ?
+_chs_screenBmp Bitmap ?
+_chs_buffer db CHAT_BUFFER_SIZE dup(?)
+_chs_i uint32 ?
 
 .code
 chatScreen_onCreate proc
 	invoke loadBitmap, offset chatScreenFileName
-	mov chatScreenBmp, eax
+	mov _chs_screenBmp, eax
 	ret
 chatScreen_onCreate endp
 
 chatScreen_onDestroy proc
-	invoke deleteBitmap, chatScreenBmp
+	invoke deleteBitmap, _chs_screenBmp
 	ret
 chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
-	invoke renderBitmap, chatScreenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
+	invoke renderBitmap, _chs_screenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
 	ret
 chatScreen_onDraw endp
 
@@ -965,7 +1007,7 @@ chatScreen_onUpdate proc t:uint32
 
 	call editMsg
 
-	invoke btn_isClicked, _cs_closeBtn
+	invoke btn_isClicked, _chs_closeBtn
 	.if (eax)
 		invoke sendSig, SIG_CHAT_CLOSE
 		invoke changeScreen, MAIN_SCREEN
@@ -973,8 +1015,8 @@ chatScreen_onUpdate proc t:uint32
 	.endif
 
 	; send msg
-	.if (_cs_i > 0)
-		invoke btn_isClicked, _cs_sendBtn
+	.if (_chs_i > 0)
+		invoke btn_isClicked, _chs_sendBtn
 		mov sendIsClicked, al
 		invoke isKeyPressed, VK_RETURN
 		.if (eax || sendIsClicked)
@@ -988,19 +1030,19 @@ chatScreen_onUpdate endp
 editMsg proc
 	invoke getCharInput 
 	.if (eax == VK_BACK)
-		.if (_cs_i != 0)
-			dec _cs_i
-			mov ebx, _cs_i
-			mov _cs_buffer[ebx], 0
+		.if (_chs_i != 0)
+			dec _chs_i
+			mov ebx, _chs_i
+			mov _chs_buffer[ebx], 0
 			ret
 		.endif
-	.elseif (eax == VK_ESCAPE || eax == VK_TAB) ;ignore those buttons
+	.elseif (eax == VK_ESCAPE || eax == VK_TAB || eax == VK_RETURN) ;ignore those buttons
 		ret
 	.elseif (eax != NULL)
-		.if (_cs_i < CHAT_BUFFER_SIZE)
-			mov ebx, _cs_i
-			mov _cs_buffer[ebx], al
-			inc _cs_i
+		.if (_chs_i < CHAT_BUFFER_SIZE)
+			mov ebx, _chs_i
+			mov _chs_buffer[ebx], al
+			inc _chs_i
 		.endif
 	.endif
 	ret
@@ -1020,27 +1062,29 @@ sendChatData endp
 ;;						Connection Error Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-ConnnectionrErrorScreen db "assets/ConnectionErrorScreen.bmp",0
+connnectionErrorScreenFileName db "assets/connErrorScreen.bmp",0
+
 .data
-_ces_reconnectBtn Button <>
-_ces_exitBtn Button <> ; TODO
+_ces_reconnectBtn Button <307, 225, 489, 279>
+_ces_exitBtn Button <345, 291, 454, 345>
 
 .data?
-ConnectionErrorScreenBmp Bitmap ?
+_ces_screenBmp Bitmap ?
+
 .code
 connErrorScreen_onCreate proc
-	invoke loadBitmap, offset ConnnectionrErrorScreen
-	mov ConnectionErrorScreenBmp, eax
+	invoke loadBitmap, offset connnectionErrorScreenFileName
+	mov _ces_screenBmp, eax
 	ret
 connErrorScreen_onCreate endp
 
 connErrorScreen_onDestroy proc
-	invoke deleteBitmap, ConnectionErrorScreenBmp
+	invoke deleteBitmap, _ces_screenBmp
 	ret
 connErrorScreen_onDestroy endp
 
 connErrorScreen_onDraw proc
-	invoke renderBitmap, ConnectionErrorScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, _ces_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 connErrorScreen_onDraw endp
 
@@ -1069,41 +1113,44 @@ connErrorScreen_onUpdate endp
 ;;							Exit Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-ExitScreen db "assets/exitScreen.bmp",0
+exitScreenFileName db "assets/exitScreen.bmp",0
+
 .data
-_es_yesBtn Button <>
-_es_noBtn Button <> ; TODO
+_es_yesBtn Button <269, 248, 381, 305>
+_es_noBtn Button <419, 251, 531, 304>
 
 .data?
-ExitScreenBit Bitmap ?
+_es_screenBmp Bitmap ?
+
 .code
 exitScreen_onCreate proc
-	invoke loadBitmap, offset ExitScreen
-	mov ExitScreenBit, eax
+	invoke loadBitmap, offset exitScreenFileName
+	mov _es_screenBmp, eax
 	ret
 exitScreen_onCreate endp
 
 exitScreen_onDestroy proc
-	invoke deleteBitmap, ExitScreenBit
+	invoke deleteBitmap, _es_screenBmp
 	ret
 exitScreen_onDestroy endp
 
 exitScreen_onDraw proc
-	invoke renderBitmap, ExitScreenBit, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke renderBitmap, _es_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 exitScreen_onDraw endp
 
 exitScreen_onUpdate proc t:uint32
 	invoke btn_isClicked, _es_yesBtn
 	.if (eax)
-		call exit
+		invoke sendSig, SIG_EXIT
 		printfln "going to exit",0
+		call exit
 	.endif
 
 	invoke btn_isClicked, _es_noBtn
 	.if (eax)
-		call goToPrevScreen
 		printfln "exit canceled, going to previous screen",0
+		call goToPrevScreen
 	.endif
 
 	ret

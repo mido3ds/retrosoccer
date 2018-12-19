@@ -267,6 +267,8 @@ setTextColor proto color:Color
 
 setBkColor proto color:Color
 
+TRANSPARENT                          equ 1
+OPAQUE                               equ 2
 ; mode=TRANSPARENT|OPAQUE
 setBkMode proto mode:uint32
 
@@ -308,6 +310,7 @@ drawLine proto x1:uint32, y1:uint32, x2:uint32, y2:uint32
 drawRect proto x1:uint32, y1:uint32, x2:uint32, y2:uint32
 drawRoundRect proto x1:uint32, y1:uint32, x2:uint32, y2:uint32, w:uint32, h:uint32
 drawEllipse proto x1:uint32, y1:uint32, x2:uint32, y2:uint32
+drawFrameRect proto a:ptr AABB
 
 ; list of format enums
 DT_TOP                               equ 0h

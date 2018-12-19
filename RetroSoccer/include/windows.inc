@@ -1454,8 +1454,6 @@ TRUETYPE_FONTTYPE                    equ 4h
 PC_RESERVED                          equ 1h
 PC_EXPLICIT                          equ 2h
 PC_NOCOLLAPSE                        equ 4h
-TRANSPARENT                          equ 1
-OPAQUE                               equ 2
 BKMODE_LAST                          equ 2
 GM_COMPATIBLE                        equ 1
 GM_ADVANCED                          equ 2

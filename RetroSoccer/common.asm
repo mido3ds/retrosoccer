@@ -864,6 +864,12 @@ drawEllipse proc x1:uint32, y1:uint32, x2:uint32, y2:uint32
     ret
 drawEllipse endp
 
+drawFrameRect proc a:ptr AABB
+	invoke GetStockObject, BLACK_BRUSH
+	invoke FrameRect, __hdcTemp, a, eax
+	ret
+drawFrameRect endp
+
 clearScreen proc color:Color
 	local br:Brush
 	.CONST
