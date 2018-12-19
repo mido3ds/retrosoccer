@@ -543,7 +543,6 @@ waitConnEvent endp
 sendSig proc signal:byte
 	local numBytes:uint32
 	invoke WriteFile, __portHndl, addr signal, 1, addr numBytes, NULL
-	;invoke GetLastError
 	ret
 sendSig endp
 

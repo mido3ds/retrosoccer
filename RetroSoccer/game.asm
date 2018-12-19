@@ -327,24 +327,48 @@ mainScreen_onDraw proc
 mainScreen_onDraw endp
 
 mainScreen_onUpdate proc t:uint32
-	;local sigReceived:byte
-	;invoke recvSig ; TODO fix so it doesn't block
+	invoke recvSig
+	.if (eax)
+		.if (eax == SIG_GAME_INV)
+			mov invitationType, INVTYPE_GAME
+			invoke changeScreen, RECV_INV_SCREEN
+			printfln "going to recv invitation screen[game]",0
+			ret
+		.elseif (eax == SIG_CHAT_INV)
+			mov invitationType, INVTYPE_CHAT
+			invoke changeScreen, RECV_INV_SCREEN
+			printfln "going to recv invitation screen[chat]",0
+			ret
+		.elseif (eax == SIG_EXIT)
+			invoke changeScreen, CONNECTING_SCREEN
+			printfln "going to connecting screen[exit]",0
+			ret
+		.elseif
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			printfln "mainScreen_onUpdate failed",0
+			ret
+		.endif
+	.endif
+
 	invoke btn_isClicked, playBtn
 	.if (eax)
-		invoke changeScreen, SELECT_SCREEN
 		invoke sendSig, SIG_GAME_INV
-		printfln "going to select screen",0
+		invoke changeScreen, SEND_INV_SCREEN
+		mov invitationType, INVTYPE_GAME
+		printfln "going to send invitation screen[game]",0
 	.endif
 
 	invoke btn_isClicked, chatBtn
 	.if (eax)
-		invoke changeScreen, CHAT_SCREEN
 		invoke sendSig, SIG_CHAT_INV
-		printfln "going to chat screen",0
+		invoke changeScreen, SEND_INV_SCREEN
+		mov invitationType, INVTYPE_CHAT
+		printfln "going to send invitation screen[chat]",0
 	.endif
 
 	invoke btn_isClicked, exitBtn
 	.if (eax)
+		invoke sendSig, SIG_EXIT
 		invoke changeScreen, EXIT_SCREEN
 		printfln "going to exit screen",0
 	.endif
@@ -378,25 +402,35 @@ sendInvitationScreen_onDraw proc
 sendInvitationScreen_onDraw endp
 
 sendInvitationScreen_onUpdate proc t:uint32
+	invoke recvSig
+	.if (eax)
+		.if (eax == SIG_ACCEPT_INV)
+			.if (invitationType == INVTYPE_CHAT) 
+				invoke sendSig, SIG_CHAT_START
+				invoke changeScreen, CHAT_SCREEN
+				printfln "going to chat screen",0
+				ret
+			.elseif (invitationType == INVTYPE_GAME) 
+				invoke sendSig, SIG_GAME_START
+				invoke changeScreen, GAME_SCREEN
+				printfln "going to game screen",0
+				ret
+			.endif
+		.elseif (eax == SIG_DECLINE_INV)
+			invoke changeScreen, MAIN_SCREEN
+			printfln "invitation declined, going back to main screen",0
+			ret
+		.else
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			printfln "snedInvitationScreen_onUpdate failed",0
+		.endif
+	.endif
+
 	invoke btn_isClicked, cancelBtn
 	.if (eax)
 		invoke sendSig, SIG_CANCEL_INV
 		invoke changeScreen, MAIN_SCREEN
-		printfln "going to main screen",0
-	.endif
-
-	; TODO: fix so it doesn't block
-	invoke recvSig
-	.if (eax == SIG_ACCEPT_INV)
-		.if (invitationType == INVTYPE_CHAT) 
-			invoke sendSig, SIG_CHAT_START
-			invoke changeScreen, CHAT_SCREEN
-			printfln "going to chat screen",0
-		.elseif (invitationType == INVTYPE_GAME) 
-			invoke sendSig, SIG_GAME_START
-			invoke changeScreen, GAME_SCREEN
-			printfln "going to game screen",0
-		.endif
+		printfln "going to main screen[canecel]",0
 	.endif
 	ret
 sendInvitationScreen_onUpdate endp
@@ -444,18 +478,35 @@ recvInvitationScreen_onDraw proc
 recvInvitationScreen_onDraw endp
 
 recvInvitationScreen_onUpdate proc t:uint32
+	invoke recvSig
+	.if (eax)
+		.if (eax == SIG_CANCEL_INV)
+			invoke changeScreen, MAIN_SCREEN
+			printfln "invitation canceled, going back to main screen",0
+		.else
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			printfln "recvInvitationScreen_onUpdate failed, goint to connec error screen",0
+		.endif
+	.endif
+
 	invoke btn_isClicked, acceptBtn
 	.if (eax)
 		invoke sendSig, SIG_ACCEPT_INV
-		invoke changeScreen, WAIT_OP_SCREEN
-		printfln "going to waiting op screen",0
+
+		.if (invitationType == INVTYPE_GAME)
+			invoke changeScreen, WAIT_OP_SCREEN
+			printfln "going to waiting op screen[accept]",0
+		.elseif (invitationType == INVTYPE_CHAT)
+			invoke changeScreen, CHAT_SCREEN
+			printfln "going to chat screen[accept]",0
+		.endif
 	.endif
 
 	invoke btn_isClicked, declineBtn
 	.if (eax)
 		invoke sendSig, SIG_DECLINE_INV
 		invoke changeScreen, MAIN_SCREEN
-		printfln "going to main screen",0
+		printfln "going to main screen[decline]",0
 	.endif
 	ret
 recvInvitationScreen_onUpdate endp
@@ -484,7 +535,18 @@ waitingScreen_onDraw proc
 waitingScreen_onDraw endp
 
 waitingScreen_onUpdate proc t:uint32
-
+	invoke recvSig
+	.if (eax)
+		.if (eax == SIG_GAME_START)
+			invoke changeScreen, GAME_SCREEN
+			printfln "game started, going to game screen",0
+			ret
+		.else
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			printfln "waitingScreen_onUpdate failed, going to connec error screen",0
+			ret
+		.endif
+	.endif
 	ret
 waitingScreen_onUpdate endp
 
