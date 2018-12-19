@@ -908,6 +908,8 @@ _cs_sendBtn Button <736,458,785,497>
 
 .data?
 chatScreenBmp Bitmap ?
+_cs_buffer db CHAT_BUFFER_SIZE dup(?)
+_cs_i uint32 ?
 
 .code
 chatScreen_onCreate proc
@@ -927,6 +929,23 @@ chatScreen_onDraw proc
 chatScreen_onDraw endp
 
 chatScreen_onUpdate proc t:uint32
+	invoke recvSig
+	.if (eax) 
+		.if (eax == SIG_CHAT_DATA)
+			call receiveChatData
+		.elseif (eax == SIG_CHAT_CLOSE)
+			invoke changeScreen, MAIN_SCREEN
+			printfln "going to main screen",0
+			ret
+		.else
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			printfln "chatScreen_onUpdate failed, going to connec error",0
+			ret
+		.endif
+	.endif
+
+	call editMsg
+
 	invoke btn_isClicked, _cs_closeBtn
 	.if (eax)
 		invoke sendSig, SIG_CHAT_CLOSE
@@ -934,16 +953,50 @@ chatScreen_onUpdate proc t:uint32
 		printfln "going to main screen",0
 	.endif
 
-	invoke btn_isClicked, _cs_sendBtn
-	push eax
-	invoke isKeyPressed, VK_RETURN
-	pop ebx
-	.if (eax || ebx)
-		invoke sendSig, SIG_CHAT_DATA
-		;TODO
-	.endif 
+	; send msg
+	.if (_cs_i > 0)
+		invoke btn_isClicked, _cs_sendBtn
+		push eax
+		invoke isKeyPressed, VK_RETURN
+		pop ebx
+		.if (eax || ebx)
+			invoke sendSig, SIG_CHAT_DATA
+			call sendChatData
+		.endif 
+	.endif
 	ret
 chatScreen_onUpdate endp
+
+editMsg proc
+	invoke getCharInput 
+	.if (eax == VK_BACK)
+		.if (_cs_i != 0)
+			dec _cs_i
+			mov ebx, _cs_i
+			mov _cs_buffer[ebx], 0
+			ret
+		.endif
+	.elseif (eax == VK_ESCAPE || eax == VK_TAB) ;ignore those buttons
+		ret
+	.elseif (eax != NULL)
+		.if (_cs_i < CHAT_BUFFER_SIZE)
+			mov ebx, _cs_i
+			mov _cs_buffer[ebx], al
+			inc _cs_i
+		.endif
+	.endif
+	ret
+editMsg endp
+
+receiveChatData proc
+	;TODO
+	ret
+receiveChatData endp
+
+sendChatData proc
+	; TODO
+	ret
+sendChatData endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;						Connection Error Screen         			   ;;
