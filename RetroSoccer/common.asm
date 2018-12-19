@@ -1076,9 +1076,39 @@ btn_isHovered proc b:Button
 	ret
 btn_isHovered endp
 
-list_insert proc l:ptr Node, n:ptr Node
-	; TODO
+list_insert proc l:ptr Node, value:pntr
+	local newNode:ptr Node
+	invoke malloc, sizeof Node
+	mov newNode, eax
+	assume eax:ptr Node
+	push value
+	pop [eax].value 
+	push l
+	pop [eax].next
+	mov [eax].prev, NULL
+
+	mov eax, l
+	assume eax:ptr Node
+	push newNode
+	pop [eax].prev
+
+	mov eax, newNode
 	ret
 list_insert endp
+
+list_delete proc l:ptr Node
+	.while (l)
+		mov eax, l
+		assume eax:ptr Node
+		invoke free, [eax].value
+
+		mov eax, l
+		assume eax:ptr Node
+		push [eax].next
+		invoke free, l
+		pop l
+	.endw
+	ret
+list_delete endp
 
 end start

@@ -154,7 +154,8 @@ Node STRUCT
 	prev pntr ?
 Node ENDS
 
-list_insert proto l:ptr Node, n:ptr Node
+list_insert proto l:ptr Node, value:pntr
+list_delete proto l:ptr Node
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Bounding Box  							   ;;
