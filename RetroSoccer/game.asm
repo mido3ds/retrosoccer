@@ -195,30 +195,37 @@ logoScreen_onUpdate endp
 ;;							Type Name Screen						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-typeYourNameStr db "Type your name:",0
+typeYourNameStr db "assets/typeNameScreen.bmp",0
 .data
+ok Button <364, 298, 437, 339>
+
 charIndex uint32 0
 .data?
+NameScreenBmp Bitmap ?
 .code
 typenameScreen_onCreate proc
-	
+	invoke loadBitmap, offset typeYourNameStr
+	mov NameScreenBmp, eax
 	ret
 typenameScreen_onCreate endp
 
 typenameScreen_onDestroy proc
-	
+	invoke deleteBitmap, NameScreenBmp
 	ret
 typenameScreen_onDestroy endp
 
 typenameScreen_onDraw proc
-	invoke drawText, offset typeYourNameStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset userName, 305, 156+40, 305+200, 156+40+30, DT_CENTER or DT_TOP
+	invoke renderBitmap, NameScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke drawText, offset userName, 309, 220, 495, 247, DT_CENTER or DT_TOP
 	ret
 typenameScreen_onDraw endp
 
 typenameScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, ok
+	push ebx
 	invoke getCharInput 
-	.if (eax == VK_RETURN)
+	pop ebx
+	.if (ebx || eax == VK_RETURN)
 		.if (charIndex != 0)
 			invoke sendSig, SIG_CONNECT
 			invoke changeScreen, CONNECTING_SCREEN
@@ -249,23 +256,25 @@ typenameScreen_onUpdate endp
 ;;							Connecting Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-connectingStr db "Connecting ...", 0
+connectScreen db "assets/ConnectScreen.bmp", 0
 
 .data
 .data?
+ConnectScreenBmp Bitmap ?
 .code
 connectingScreen_onCreate proc
-	
+	invoke loadBitmap, offset connectScreen
+	mov ConnectScreenBmp, eax
 	ret
 connectingScreen_onCreate endp
 
 connectingScreen_onDestroy proc
-	
+	invoke deleteBitmap, ConnectScreenBmp
 	ret
 connectingScreen_onDestroy endp
 
 connectingScreen_onDraw proc
-	invoke drawText, offset connectingStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke renderBitmap,ConnectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 connectingScreen_onDraw endp
 
@@ -311,30 +320,29 @@ recvName endp
 ;;							Main Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-playStr db "Play",0
-chatStr db "Chat",0
-exitStr db "Exit",0
+MainScreen db "assets/mainScreen.bmp",0
 
 .data
-playBtn Button <305, 156, 305+200, 156+30>
-chatBtn Button <305, 156+30, 305+200, 156+30+30>
-exitBtn Button <305, 156+60, 305+200, 156+30+60>
+playBtn Button <349, 224, 450, 272>
+chatBtn Button <345, 289, 452, 337>
+exitBtn Button <350, 355, 452, 401>
 .data?
+MainScreenBmp Bitmap ?
+
 .code
 mainScreen_onCreate proc
-	
+	invoke loadBitmap, offset MainScreen
+	mov MainScreenBmp, eax
 	ret
 mainScreen_onCreate endp
 
 mainScreen_onDestroy proc
-	
+	invoke deleteBitmap, MainScreenBmp
 	ret
 mainScreen_onDestroy endp
 
 mainScreen_onDraw proc
-	invoke drawText, offset playStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset chatStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
-	invoke drawText, offset exitStr, 305, 156+60, 305+200, 156+30+60, DT_CENTER or DT_TOP
+	invoke renderBitmap, MainScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 mainScreen_onDraw endp
 
@@ -391,25 +399,29 @@ mainScreen_onUpdate endp
 ;;							Send Invitation Screen     				   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-sendingInvStr db "Sending Invitation ...",0
+
+sendingInvStr db "assets/sendInvitationScreen.bmp",0
 cancelStr db "[Cancel]",0
 .data
-cancelBtn Button <305, 156+30, 305+200, 156+30+30>
+cancelBtn Button <339, 301, 461, 350>
 .data?
+SendInvitationBmp Bitmap ?
+
 .code
 sendInvitationScreen_onCreate proc
-	
+	invoke loadBitmap, offset sendingInvStr
+	mov SendInvitationBmp, eax
 	ret
 sendInvitationScreen_onCreate endp
 
 sendInvitationScreen_onDestroy proc
-	
+	invoke deleteBitmap, SendInvitationBmp
 	ret
 sendInvitationScreen_onDestroy endp
 
 sendInvitationScreen_onDraw proc
-	invoke drawText, offset sendingInvStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset cancelStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
+invoke renderBitmap, SendInvitationBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	
 	ret
 sendInvitationScreen_onDraw endp
 
@@ -481,11 +493,8 @@ recvInvitationScreen_onDraw proc
 	.else
 		invoke sprintf, offset _ris_buf, offset _ris_mainTextFormat_game, offset opponentName
 	.endif
-	invoke drawText, offset _ris_buf, 305, 156-30, 305+200, 156+30-30, DT_CENTER or DT_TOP
+	invoke drawText, offset _ris_buf, 233, 176, 538,256, DT_LEFT or DT_CENTER
 
-	; draw buttons
-	invoke drawText, offset acceptStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset declineStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
 	ret
 recvInvitationScreen_onDraw endp
 
@@ -527,21 +536,24 @@ recvInvitationScreen_onUpdate endp
 ;;						Waiting Opponent Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-waitingOpStr db "Waiting Other Player...",0
+waitingOpStr db "assets/waitOpScreen.bmp",0
 .data
 .data?
+WaitingOpponentBmp Bitmap ?
 .code
 waitingScreen_onCreate proc
-	
+	invoke loadBitmap, offset waitingOpStr
+	mov WaitingOpponentBmp, eax
 	ret
 waitingScreen_onCreate endp
 
 waitingScreen_onDestroy proc
-	
+	invoke deleteBitmap, WaitingOpponentBmp
 	ret
 waitingScreen_onDestroy endp
 
 waitingScreen_onDraw proc
+invoke renderBitmap, WaitingOpponentBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	invoke drawText, offset waitingOpStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
 	ret
 waitingScreen_onDraw endp
@@ -888,21 +900,25 @@ writeFinalResult endp
 ;;							Chat Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+ChatScreen db "assets/chatScreen.bmp",0
 .data
 .data?
+chatScreenbmp Bitmap ?
+
 .code
 chatScreen_onCreate proc
-	
+	invoke loadBitmap, offset ChatScreen
+	mov chatScreenbmp, eax
 	ret
 chatScreen_onCreate endp
 
 chatScreen_onDestroy proc
-	
+	invoke deleteBitmap, chatScreenbmp
 	ret
 chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
-
+invoke renderBitmap, chatScreenbmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 chatScreen_onDraw endp
 
@@ -915,24 +931,27 @@ chatScreen_onUpdate endp
 ;;						Connection Error Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+ConnnectionrErrorScreen db "assets/ConnectionErrorScreen.bmp",0
 .data
 _ces_reconnectBtn Button <>
 _ces_exitBtn Button <> ; TODO
 
 .data?
+ConnectionErrorScreenBmp Bitmap ?
 .code
 connErrorScreen_onCreate proc
-	
+	invoke loadBitmap, offset ConnnectionrErrorScreen
+	mov ConnectionErrorScreenBmp, eax
 	ret
 connErrorScreen_onCreate endp
 
 connErrorScreen_onDestroy proc
-	
+	invoke deleteBitmap, ConnectionErrorScreenBmp
 	ret
 connErrorScreen_onDestroy endp
 
 connErrorScreen_onDraw proc
-
+	invoke renderBitmap, ConnectionErrorScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 connErrorScreen_onDraw endp
 
@@ -961,24 +980,27 @@ connErrorScreen_onUpdate endp
 ;;							Exit Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+ExitScreen db "assets/exitScreen.bmp",0
 .data
 _es_yesBtn Button <>
 _es_noBtn Button <> ; TODO
 
 .data?
+ExitScreenBit Bitmap ?
 .code
 exitScreen_onCreate proc
-	
+	invoke loadBitmap, offset ExitScreen
+	mov ExitScreenBit, eax
 	ret
 exitScreen_onCreate endp
 
 exitScreen_onDestroy proc
-	
+	invoke deleteBitmap, ExitScreenBit
 	ret
 exitScreen_onDestroy endp
 
 exitScreen_onDraw proc
-
+	invoke renderBitmap, ExitScreenBit, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 exitScreen_onDraw endp
 
