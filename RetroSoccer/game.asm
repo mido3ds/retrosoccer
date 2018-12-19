@@ -8,15 +8,13 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 TYPENAME_SCREEN
+currentScreen uint32 SEND_INV_SCREEN
+level uint32 ?
 userName db MAX_NAME_CHARS+1 dup(0)
-opponentName db MAX_NAME_CHARS+1 dup(0)
+;opponentName db MAX_NAME_CHARS+1 dup(0)
+opponentName db "ay habal",0
 isHost bool FALSE
 chatAccepted bool FALSE
-
-selectedLevel uint32 1
-selectedBallType uint32 BALL_TYPE_1
-selectedColor uint32 PLAYER_COLOR_BLUE
 
 INVTYPE_CHAT equ 0
 INVTYPE_GAME equ 1
@@ -60,7 +58,6 @@ onDestroy proc
 	call connErrorScreen_onDestroy
 	call exitScreen_onDestroy
 
-	invoke sendSig, SIG_EXIT
 	call closeConnection
 
 	ret
@@ -102,7 +99,7 @@ onUpdate proc t:uint32
 	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
 	printf "f[%i,%i,%i,%i],", p1.stickIsSelected[0], p1.stickIsSelected[1], p1.stickIsSelected[2], p1.stickIsSelected[3]
 	printf "elapsedTime=%i,", elapsedTime
-	printf "selectedLevel=%i,", selectedLevel
+	printf "level=%i,", level
 
 	ret
 onUpdate endp
@@ -149,32 +146,33 @@ changeScreen proc screen:uint32
 	ret
 changeScreen endp
 
-goToPrevScreen proc
-	mov eax, previousScreen
-	mov currentScreen, eax
-	mov previousScreen, CONNEC_ERROR_SCREEN
-	mov elapsedTime, 0
-	ret
-goToPrevScreen endp
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Logo Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+LogoScreen db "assets/logoScreen.bmp",0
+
 .data
+direction byte 1
+
 .data?
+LogoScreenBmp Bitmap ?
+alphavariable byte ?
 .code
 logoScreen_onCreate proc
-	
+	invoke loadBitmap, offset LogoScreen
+	mov LogoScreenBmp, eax
 	ret
 logoScreen_onCreate endp
 
 logoScreen_onDestroy proc
-	
+	invoke deleteBitmap, LogoScreenBmp
 	ret
 logoScreen_onDestroy endp
 
 logoScreen_onDraw proc
+	invoke clearScreen , 0ffffffh
+	invoke alphaBlend ,LogoScreenBmp,0,0,0,0,WND_WIDTH, WND_HEIGHT,alphavariable
 	ret
 logoScreen_onDraw endp
 
@@ -186,6 +184,13 @@ logoScreen_onUpdate proc t:uint32
 		ret
 	.endif
 
+	mov al,direction
+	add alphavariable ,al
+	cmp alphavariable ,255
+	jne l1
+	mov direction ,-1
+	l1:
+
 	mov eax, t
 	add elapsedTime, eax
 	ret
@@ -195,29 +200,43 @@ logoScreen_onUpdate endp
 ;;							Type Name Screen						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-typeYourNameStr db "Type your name:",0
+typeYourNameStr db "assets/typeNameScreen.bmp",0
 .data
+ok Button <364, 298, 437, 339>
+
 charIndex uint32 0
 .data?
+NameScreenBmp Bitmap ?
 .code
 typenameScreen_onCreate proc
-	
+	invoke loadBitmap, offset typeYourNameStr
+	mov NameScreenBmp, eax
 	ret
 typenameScreen_onCreate endp
 
 typenameScreen_onDestroy proc
-	
+	invoke deleteBitmap, NameScreenBmp
 	ret
 typenameScreen_onDestroy endp
 
 typenameScreen_onDraw proc
-	invoke drawText, offset typeYourNameStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset userName, 305, 156+40, 305+200, 156+40+30, DT_CENTER or DT_TOP
+	invoke renderBitmap, NameScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	invoke drawText, offset userName, 309, 220, 495, 247, DT_CENTER or DT_TOP
 	ret
 typenameScreen_onDraw endp
 
 typenameScreen_onUpdate proc t:uint32
+	invoke btn_isClicked, ok
+	.if (eax )
+	.if (charIndex != 0)
+			invoke sendSig, SIG_CONNECT
+			invoke changeScreen, CONNECTING_SCREEN
+			printfln "going to connecting screen",0
+			ret
+			.endif
+			.endif
 	invoke getCharInput 
+	
 	.if (eax == VK_RETURN)
 		.if (charIndex != 0)
 			invoke sendSig, SIG_CONNECT
@@ -249,23 +268,25 @@ typenameScreen_onUpdate endp
 ;;							Connecting Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-connectingStr db "Connecting ...", 0
+connectScreen db "assets/ConnectScreen.bmp", 0
 
 .data
 .data?
+ConnectScreenBmp Bitmap ?
 .code
 connectingScreen_onCreate proc
-	
+	invoke loadBitmap, offset connectScreen
+	mov ConnectScreenBmp, eax
 	ret
 connectingScreen_onCreate endp
 
 connectingScreen_onDestroy proc
-	
+	invoke deleteBitmap, ConnectScreenBmp
 	ret
 connectingScreen_onDestroy endp
 
 connectingScreen_onDraw proc
-	invoke drawText, offset connectingStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
+	invoke renderBitmap,ConnectScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 connectingScreen_onDraw endp
 
@@ -314,73 +335,66 @@ recvName endp
 playStr db "Play",0
 chatStr db "Chat",0
 exitStr db "Exit",0
-
+;;;;;
+MainScreen db "assets/mainScreen.bmp",0
+;;;;;;
 .data
-playBtn Button <305, 156, 305+200, 156+30>
-chatBtn Button <305, 156+30, 305+200, 156+30+30>
-exitBtn Button <305, 156+60, 305+200, 156+30+60>
+playBtn Button <349, 224, 450, 272>
+chatBtn Button <345, 289, 452, 337>
+exitBtn Button <350, 355, 452, 401>
 .data?
+;;;;
+MainScreenBmp Bitmap ?
+;;;;
 .code
 mainScreen_onCreate proc
-	
+	invoke loadBitmap, offset MainScreen
+	mov MainScreenBmp, eax
 	ret
 mainScreen_onCreate endp
 
 mainScreen_onDestroy proc
-	
+	invoke deleteBitmap, MainScreenBmp
 	ret
 mainScreen_onDestroy endp
 
 mainScreen_onDraw proc
-	invoke drawText, offset playStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset chatStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
-	invoke drawText, offset exitStr, 305, 156+60, 305+200, 156+30+60, DT_CENTER or DT_TOP
+	invoke renderBitmap, MainScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 mainScreen_onDraw endp
 
 mainScreen_onUpdate proc t:uint32
 	invoke recvSig
-	.if (eax)
-		.if (eax == SIG_GAME_INV)
-			mov invitationType, INVTYPE_GAME
-			invoke changeScreen, RECV_INV_SCREEN
-			printfln "going to recv invitation screen[game]",0
-			ret
-		.elseif (eax == SIG_CHAT_INV)
-			mov invitationType, INVTYPE_CHAT
-			invoke changeScreen, RECV_INV_SCREEN
-			printfln "going to recv invitation screen[chat]",0
-			ret
-		.elseif (eax == SIG_EXIT)
-			invoke changeScreen, CONNECTING_SCREEN
-			printfln "going to connecting screen[exit]",0
-			ret
-		.elseif
-			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "mainScreen_onUpdate failed",0
-			ret
-		.endif
+	.if (eax == SIG_GAME_INV)
+		invoke changeScreen, RECV_INV_SCREEN
+		printfln "going to recv invitation screen[game]",0
+	.elseif (eax == SIG_CHAT_INV)
+		invoke changeScreen, RECV_INV_SCREEN
+		printfln "going to recv invitation screen[chat]",0
+	.elseif (eax == SIG_EXIT)
+		invoke changeScreen, CONNECTING_SCREEN
+		printfln "going to recv connecting screen[exit]",0
+	.else
+;		invoke changeScreen, CONNEC_ERROR_SCREEN
+		printfln "mainScreen_onUpdate failed",0
 	.endif
 
 	invoke btn_isClicked, playBtn
 	.if (eax)
+		invoke changeScreen, SELECT_SCREEN
 		invoke sendSig, SIG_GAME_INV
-		invoke changeScreen, SEND_INV_SCREEN
-		mov invitationType, INVTYPE_GAME
-		printfln "going to send invitation screen[game]",0
+		printfln "going to select screen",0
 	.endif
 
 	invoke btn_isClicked, chatBtn
 	.if (eax)
+		invoke changeScreen, CHAT_SCREEN
 		invoke sendSig, SIG_CHAT_INV
-		invoke changeScreen, SEND_INV_SCREEN
-		mov invitationType, INVTYPE_CHAT
-		printfln "going to send invitation screen[chat]",0
+		printfln "going to chat screen",0
 	.endif
 
 	invoke btn_isClicked, exitBtn
 	.if (eax)
-		invoke sendSig, SIG_EXIT
 		invoke changeScreen, EXIT_SCREEN
 		printfln "going to exit screen",0
 	.endif
@@ -391,58 +405,52 @@ mainScreen_onUpdate endp
 ;;							Send Invitation Screen     				   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-sendingInvStr db "Sending Invitation ...",0
+
+sendingInvStr db "assets/sendInvitationScreen.bmp",0
 cancelStr db "[Cancel]",0
 .data
-cancelBtn Button <305, 156+30, 305+200, 156+30+30>
+cancelBtn Button <339, 301, 461, 350>
 .data?
+SendInvitationBmp Bitmap ?
+
 .code
 sendInvitationScreen_onCreate proc
-	
+	invoke loadBitmap, offset sendingInvStr
+	mov SendInvitationBmp, eax
 	ret
 sendInvitationScreen_onCreate endp
 
 sendInvitationScreen_onDestroy proc
-	
+	invoke deleteBitmap, SendInvitationBmp
 	ret
 sendInvitationScreen_onDestroy endp
 
 sendInvitationScreen_onDraw proc
-	invoke drawText, offset sendingInvStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset cancelStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
+invoke renderBitmap, SendInvitationBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
+	
 	ret
 sendInvitationScreen_onDraw endp
 
 sendInvitationScreen_onUpdate proc t:uint32
-	invoke recvSig
-	.if (eax)
-		.if (eax == SIG_ACCEPT_INV)
-			.if (invitationType == INVTYPE_CHAT) 
-				invoke sendSig, SIG_CHAT_START
-				invoke changeScreen, CHAT_SCREEN
-				printfln "going to chat screen",0
-				ret
-			.elseif (invitationType == INVTYPE_GAME) 
-				invoke sendSig, SIG_GAME_START
-				invoke changeScreen, GAME_SCREEN
-				printfln "going to game screen",0
-				ret
-			.endif
-		.elseif (eax == SIG_DECLINE_INV)
-			invoke changeScreen, MAIN_SCREEN
-			printfln "invitation declined, going back to main screen",0
-			ret
-		.else
-			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "snedInvitationScreen_onUpdate failed",0
-		.endif
-	.endif
-
 	invoke btn_isClicked, cancelBtn
 	.if (eax)
 		invoke sendSig, SIG_CANCEL_INV
 		invoke changeScreen, MAIN_SCREEN
-		printfln "going to main screen[canecel]",0
+		printfln "going to main screen",0
+	.endif
+
+	; TODO: fix so it doesn't block
+	invoke recvSig
+	.if (eax == SIG_ACCEPT_INV)
+		.if (invitationType == INVTYPE_CHAT) 
+			invoke sendSig, SIG_CHAT_START
+			invoke changeScreen, CHAT_SCREEN
+			printfln "going to chat screen",0
+		.elseif (invitationType == INVTYPE_GAME) 
+			invoke sendSig, SIG_GAME_START
+			invoke changeScreen, GAME_SCREEN
+			printfln "going to game screen",0
+		.endif
 	.endif
 	ret
 sendInvitationScreen_onUpdate endp
@@ -451,74 +459,80 @@ sendInvitationScreen_onUpdate endp
 ;;						Receive Invitation Screen        			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+RecievingInvStr db "assets/recvInvitationScreen.bmp",0
 acceptStr db "Accept",0
 declineStr db "Decline",0
 .data
-acceptBtn Button <305, 156, 305+200, 156+30>
-declineBtn Button <305, 156+30, 305+200, 156+30+30>
+RecievingInvitationBmp Bitmap ?
+
+acceptBtn Button <261, 301, 495, 247>
+declineBtn Button <421, 302, 537, 347>
 .data?
+
 .code
+
+
+
 recvInvitationScreen_onCreate proc
-	
+	invoke loadBitmap, offset RecievingInvStr
+	mov RecievingInvitationBmp, eax
 	ret
 recvInvitationScreen_onCreate endp
 
 recvInvitationScreen_onDestroy proc
-	
+	invoke deleteBitmap, RecievingInvitationBmp
 	ret
 recvInvitationScreen_onDestroy endp
 
 recvInvitationScreen_onDraw proc
+local playeropp:pntr
+local Invitationtype:pntr
 	; draw main text
-	.const 
-	_ris_mainTextFormat_game byte "%s Sent You Game Invitation",0
-	_ris_mainTextFormat_chat byte "%s Sent You Chat Invitation",0
-	.data?
-	_ris_buf byte 256 dup(0)
-	.code
-	.if (invitationType == INVTYPE_CHAT) 
-		invoke sprintf, offset _ris_buf, offset _ris_mainTextFormat_chat, offset opponentName
-	.else
-		invoke sprintf, offset _ris_buf, offset _ris_mainTextFormat_game, offset opponentName
-	.endif
-	invoke drawText, offset _ris_buf, 305, 156-30, 305+200, 156+30-30, DT_CENTER or DT_TOP
+	invoke renderBitmap, RecievingInvitationBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 
-	; draw buttons
-	invoke drawText, offset acceptStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
-	invoke drawText, offset declineStr, 305, 156+30, 305+200, 156+30+30, DT_CENTER or DT_TOP
+
+		.CONST
+	playeroopFormat db "%s Sent You Invitation for Game",0
+	playeroopFormat2 db "%s Sent You Invitation for Chat",0
+	.DATA
+	PlayeOOPBuf db 200 dup(0)
+	.CODE
+
+		
+	mov playeropp, offset opponentName
+
+	.if (Invitationtype == INVTYPE_GAME)
+		invoke sprintf, offset PlayeOOPBuf, offset playeroopFormat, playeropp		
+	.else
+		invoke sprintf, offset PlayeOOPBuf, offset playeroopFormat2, playeropp,eax
+	.endif
+
+	invoke drawText, offset PlayeOOPBuf, 233, 176, 538,256, DT_LEFT or DT_CENTER
+
 	ret
 recvInvitationScreen_onDraw endp
 
 recvInvitationScreen_onUpdate proc t:uint32
-	invoke recvSig
-	.if (eax)
-		.if (eax == SIG_CANCEL_INV)
-			invoke changeScreen, MAIN_SCREEN
-			printfln "invitation canceled, going back to main screen",0
-		.else
-			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "recvInvitationScreen_onUpdate failed, goint to connec error screen",0
-		.endif
-	.endif
+
+
 
 	invoke btn_isClicked, acceptBtn
 	.if (eax)
 		invoke sendSig, SIG_ACCEPT_INV
-
-		.if (invitationType == INVTYPE_GAME)
-			invoke changeScreen, WAIT_OP_SCREEN
-			printfln "going to waiting op screen[accept]",0
-		.elseif (invitationType == INVTYPE_CHAT)
-			invoke changeScreen, CHAT_SCREEN
-			printfln "going to chat screen[accept]",0
-		.endif
+		invoke changeScreen, WAIT_OP_SCREEN
+		printfln "going to waiting op screen",0
 	.endif
 
 	invoke btn_isClicked, declineBtn
 	.if (eax)
 		invoke sendSig, SIG_DECLINE_INV
 		invoke changeScreen, MAIN_SCREEN
-		printfln "going to main screen[decline]",0
+		printfln "going to main screen",0
+
+
+	
+
+
 	.endif
 	ret
 recvInvitationScreen_onUpdate endp
@@ -527,101 +541,46 @@ recvInvitationScreen_onUpdate endp
 ;;						Waiting Opponent Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-waitingOpStr db "Waiting Other Player...",0
+waitingOpStr db "assets/waitOpScreen.bmp",0
 .data
 .data?
+WaitingOpponentBmp Bitmap ?
 .code
 waitingScreen_onCreate proc
-	
+	invoke loadBitmap, offset waitingOpStr
+	mov WaitingOpponentBmp, eax
 	ret
 waitingScreen_onCreate endp
 
 waitingScreen_onDestroy proc
-	
+	invoke deleteBitmap, WaitingOpponentBmp
 	ret
 waitingScreen_onDestroy endp
 
 waitingScreen_onDraw proc
+invoke renderBitmap, WaitingOpponentBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	invoke drawText, offset waitingOpStr, 305, 156, 305+200, 156+30, DT_CENTER or DT_TOP
 	ret
 waitingScreen_onDraw endp
 
 waitingScreen_onUpdate proc t:uint32
-	invoke recvSig
-	.if (eax)
-		.if (eax == SIG_GAME_START)
-			mov isHost, FALSE
-			call recvGameInitialData
 
-			call initNonHostGameData
-
-			invoke changeScreen, GAME_SCREEN
-			printfln "game started, going to game screen",0
-			ret
-		.else
-			invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "waitingScreen_onUpdate failed, going to connec error screen",0
-			ret
-		.endif
-	.endif
 	ret
 waitingScreen_onUpdate endp
 
-recvGameInitialData proc
-	invoke recv, offset selectedLevel, 1
-	invoke recv, offset selectedColor, 1
-	invoke recv, offset selectedBallType, 1
-	; TODO check errors
-	ret
-recvGameInitialData endp
-
-initNonHostGameData proc
-	; init ball
-	invoke vec_set, addr ball.pos, BALL_START_SEC
-	invoke vec_set, addr ball.spd, 0, 0
-	.if (selectedLevel == 1)
-		mov ball.speedScalar, LV1_BALL_SPD
-	.else 
-		mov ball.speedScalar, LV2_BALL_SPD
-	.endif
-	mov eax, selectedBallType
-	mov ball.ballType, eax
-
-	; init players
-	invoke player1_reset
-	invoke player2_reset
-
-	; p2
-	mov eax, selectedColor
-	mov p2.color, eax
-
-	; get my color
-	mov eax, 1
-	sub eax, selectedColor
-	; p1
-	mov p2.color, eax
-	ret
-initNonHostGameData endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Select Screen	    					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
 selectScreenFileName db "assets/selectScreen.bmp",0
-selectRectangleFileName db "assets/selectRectangle.bmp",0
 
 .data
 lvl1Btn Button <313, 237, 484, 300>
 lvl2Btn Button <313, 313, 484, 376>
-okBtn Button <>
-blueClrBtn Button <>
-redClrBtn Button <>
-ball1Btn Button <>
-ball2Btn Button <>;TODO
 
 .data?
 selectScreenBmp Bitmap ?
-selectRectangleBmp Bitmap ?
 
 .code
 selectScreen_onCreate proc
@@ -643,83 +602,22 @@ selectScreen_onDraw endp
 selectScreen_onUpdate proc t:uint32
 	invoke btn_isClicked, lvl1Btn
 	.if (eax) 
+		invoke ball_init, LV1_BALL_SPD
 		mov matchTotalTime, LV1_MATCH_TIME
-		mov selectedLevel, 1
+		mov level, 1
+		invoke changeScreen, GAME_SCREEN
 	.endif
+
 	invoke btn_isClicked, lvl2Btn
 	.if (eax)
+		invoke ball_init, LV2_BALL_SPD
 		mov matchTotalTime, LV2_MATCH_TIME
-		mov selectedLevel, 2
-	.endif
-
-	invoke btn_isClicked, blueClrBtn
-	.if (eax)
-		mov selectedColor, PLAYER_COLOR_BLUE
-	.endif
-	invoke btn_isClicked, redClrBtn
-	.if (eax)
-		mov selectedColor, PLAYER_COLOR_RED
-	.endif
-
-	invoke btn_isClicked, ball1Btn
-	.if (eax)
-		mov selectedBallType, BALL_TYPE_1
-	.endif
-	invoke btn_isClicked, ball2Btn
-	.if (eax)
-		mov selectedBallType, BALL_TYPE_2
-	.endif
-
-	invoke btn_isClicked, okBtn
-	.if (eax)
-		mov isHost, TRUE
-		call initHostGameData
-
-		invoke sendSig, SIG_GAME_START
-		call sendGameInitialData
-
+		mov level, 2
 		invoke changeScreen, GAME_SCREEN
-		printfln "ok clicked, going to game screen",0
 	.endif
 
 	ret
 selectScreen_onUpdate endp
-
-sendGameInitialData proc
-	invoke send, offset selectedLevel, 1
-	invoke send, offset selectedColor, 1
-	invoke send, offset selectedBallType, 1
-	; TODO check errors
-	ret
-sendGameInitialData endp
-
-initHostGameData proc
-	; init ball
-	invoke vec_set, addr ball.pos, BALL_START_FIRST 
-	invoke vec_set, addr ball.spd, 0, 0
-	.if (selectedLevel == 1)
-		mov ball.speedScalar, LV1_BALL_SPD
-	.else 
-		mov ball.speedScalar, LV2_BALL_SPD
-	.endif
-	mov eax, selectedBallType
-	mov ball.ballType, eax
-
-	; init players
-	invoke player1_reset
-	invoke player2_reset
-
-	; p1
-	mov eax, selectedColor
-	mov p1.color, eax
-
-	; get other color
-	mov eax, 1
-	sub eax, selectedColor
-	; p2
-	mov p2.color, eax
-	ret
-initHostGameData endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Game Screen     						   ;;
@@ -746,6 +644,13 @@ gameScreen_onCreate proc
 	mov bluePen, eax
 	invoke createPen, 3, 0000ffh ;red
 	mov redPen, eax
+
+	; players
+	invoke player1_reset
+	mov p1.color, PLAYER_COLOR_BLUE
+	invoke player2_reset
+	mov p2.color, PLAYER_COLOR_RED
+
 	ret
 gameScreen_onCreate endp
 
@@ -846,10 +751,7 @@ gameoverScreen_onUpdate proc t:uint32
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= GAME_OVER_SCREEN_TOTAL_TIME)
-		invoke sendSig, SIG_GAME_FINISH
-
 		invoke changeScreen, MAIN_SCREEN
-		printfln "game ended, going to game over screen",0
 		mov elapsedTime, 0
 	.endif
 
@@ -888,48 +790,30 @@ writeFinalResult endp
 ;;							Chat Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
-chatScreenFileName db "assets/chatScreen.bmp",0
-
+ChatScreen db "assets/chatScreen.bmp",0
 .data
-_cs_closeBtn Button <10,5,57,53>
-_cs_sendBtn Button <736,458,785,497>
-
 .data?
-chatScreenBmp Bitmap ?
+chatScreenbmp Bitmap ?
 
 .code
 chatScreen_onCreate proc
-	invoke loadBitmap, offset chatScreenFileName
-	mov chatScreenBmp, eax
+	invoke loadBitmap, offset ChatScreen
+	mov chatScreenbmp, eax
 	ret
 chatScreen_onCreate endp
 
 chatScreen_onDestroy proc
-	invoke deleteBitmap, chatScreenBmp
+	invoke deleteBitmap, chatScreenbmp
 	ret
 chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
-	invoke renderBitmap, chatScreenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
+invoke renderBitmap, chatScreenbmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 chatScreen_onDraw endp
 
 chatScreen_onUpdate proc t:uint32
-	invoke btn_isClicked, _cs_closeBtn
-	.if (eax)
-		invoke sendSig, SIG_CHAT_CLOSE
-		invoke changeScreen, MAIN_SCREEN
-		printfln "going to main screen",0
-	.endif
 
-	invoke btn_isClicked, _cs_sendBtn
-	push eax
-	invoke isKeyPressed, VK_RETURN
-	pop ebx
-	.if (eax || ebx)
-		invoke sendSig, SIG_CHAT_DATA
-		;TODO
-	.endif 
 	ret
 chatScreen_onUpdate endp
 
@@ -937,44 +821,29 @@ chatScreen_onUpdate endp
 ;;						Connection Error Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+ConnnectionrErrorScreen db "assets/ConnectionErrorScreen.bmp",0
 .data
-_ces_reconnectBtn Button <>
-_ces_exitBtn Button <> ; TODO
-
 .data?
+ConnectionErrorScreenBmp Bitmap ?
+
 .code
 connErrorScreen_onCreate proc
-	
+	invoke loadBitmap, offset ConnnectionrErrorScreen
+	mov ConnectionErrorScreenBmp, eax
 	ret
 connErrorScreen_onCreate endp
 
 connErrorScreen_onDestroy proc
-	
+	invoke deleteBitmap, ConnectionErrorScreenBmp
 	ret
 connErrorScreen_onDestroy endp
 
 connErrorScreen_onDraw proc
-
+invoke renderBitmap, ConnectionErrorScreenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 connErrorScreen_onDraw endp
 
 connErrorScreen_onUpdate proc t:uint32
-	invoke btn_isClicked, _ces_reconnectBtn
-	.if (eax)
-		invoke sendSig, SIG_CONNECT
-
-		invoke changeScreen, CONNECTING_SCREEN
-		printfln "going to connecting screen",0
-		ret
-	.endif
-
-	invoke btn_isClicked, _ces_exitBtn
-	.if (eax)
-		invoke sendSig, SIG_EXIT
-
-		call exit
-		printfln "going to exit",0
-	.endif
 
 	ret
 connErrorScreen_onUpdate endp
@@ -983,39 +852,48 @@ connErrorScreen_onUpdate endp
 ;;							Exit Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .const
+ExitScreen db "assets/exitScreen.bmp",0
+
 .data
-_es_yesBtn Button <>
-_es_noBtn Button <> ; TODO
+YesBtn Button <349, 224, 450, 272>
+NoBtn Button <345, 289, 452, 337>
 
 .data?
+ExitScreenBit Bitmap ?
 .code
 exitScreen_onCreate proc
-	
+	invoke loadBitmap, offset ExitScreen
+	mov ExitScreenBit, eax
 	ret
 exitScreen_onCreate endp
 
 exitScreen_onDestroy proc
-	
+	invoke deleteBitmap, ExitScreenBit
 	ret
 exitScreen_onDestroy endp
 
 exitScreen_onDraw proc
-
+invoke renderBitmap, ExitScreenBit, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 	ret
 exitScreen_onDraw endp
 
 exitScreen_onUpdate proc t:uint32
-	invoke btn_isClicked, _es_yesBtn
+
+
+invoke btn_isClicked, YesBtn
 	.if (eax)
-		call exit
-		printfln "going to exit",0
+		invoke changeScreen, SELECT_SCREEN
+		invoke sendSig, SIG_GAME_INV
+		printfln "going to select screen",0
 	.endif
 
-	invoke btn_isClicked, _es_noBtn
+	invoke btn_isClicked,	NOBtn
 	.if (eax)
-		call goToPrevScreen
-		printfln "exit canceled, going to previous screen",0
+		invoke changeScreen, CHAT_SCREEN
+		invoke sendSig, SIG_CHAT_INV
+		printfln "going to chat screen",0
 	.endif
+
 
 	ret
 exitScreen_onUpdate endp
