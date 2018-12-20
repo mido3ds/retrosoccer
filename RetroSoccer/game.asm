@@ -979,6 +979,7 @@ _chs_sendBtn Button <736,458,785,497>
 _chs_screenBmp Bitmap ?
 _chs_buffer db CHAT_BUFFER_SIZE dup(?)
 _chs_i uint32 ?
+_chs_list pntr ? ; first node is dummy
 
 .code
 chatScreen_onCreate proc
@@ -1022,9 +1023,6 @@ chatScreen_onUpdate proc t:uint32
 			ret
 		.endif
 	.endif
-
-	call getScroll
-	printfln "scroll=%i",eax
 
 	call editMsg
 
@@ -1070,12 +1068,39 @@ editMsg proc
 editMsg endp
 
 receiveChatData proc
-	;TODO
+	local chatmsg:ChatMsg
+
+	call chatmsg_recv
+	.if (!eax) ; TODO handle error
+	.endif
+	mov chatmsg, eax
+
+	.if (!_chs_list)
+		invoke list_init, chatmsg
+	.else
+		invoke list_insert, _chs_list, chatmsg
+	.endif
+	mov _chs_list, eax
+
 	ret
 receiveChatData endp
 
 sendChatData proc
-	; TODO
+	local chatmsg:ChatMsg
+
+	; create chatmsg
+	invoke chatmsg_new, ME_IS_SENDER, offset _chs_buffer, _chs_i
+	mov chatmsg, eax
+
+	.if (!_chs_list)
+		invoke list_init, chatmsg
+	.else
+		invoke list_insert, _chs_list, chatmsg
+	.endif
+	mov _chs_list, eax
+	
+	invoke chatmsg_send, chatmsg
+	; TODO check errors
 	ret
 sendChatData endp
 

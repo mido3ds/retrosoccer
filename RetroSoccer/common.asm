@@ -1116,6 +1116,16 @@ btn_isHovered proc b:Button
 	ret
 btn_isHovered endp
 
+list_init proc value:pntr
+	invoke malloc, sizeof Node
+	assume eax:ptr Node
+	mov ebx, value
+	mov [eax].value, ebx
+	mov [eax].next, 0
+	mov [eax].prev, 0
+	ret
+list_init endp
+
 list_insert proc l:ptr Node, value:pntr
 	local newNode:ptr Node
 	invoke malloc, sizeof Node
@@ -1181,7 +1191,7 @@ chatmsg_delete proc cm:ptr ChatMsg
 	mov eax, cm
 	assume eax:ptr ChatMsg
 	invoke free, [eax].msg
-	invoke free, eax
+	invoke free, cm
 	ret
 chatmsg_delete endp
 
@@ -1223,6 +1233,35 @@ chatmsg_calcFitBB proc cm:ptr ChatMsg, bb:ptr AABB
 
 	ret
 chatmsg_calcFitBB endp
+
+chatmsg_send proc cm:ptr ChatMsg
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	invoke send, [eax].len
+	.if (!eax)
+		ret
+	.endif
+
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	invoke send, [eax].msg
+	ret
+chatmsg_send endp
+
+chatmsg_recv proc 
+	local len:uint32
+
+	.data?
+	_cmr_buffer byte CHAT_BUFFER_SIZE dup(?)
+	.code
+
+	invoke recv, addr len, sizeof uint32
+	invoke recv, offset _cmr_buffer, len
+	; TODO check errors
+
+	invoke chatmsg_new, OTHER_IS_SENDER, _cmr_buffer, len
+	ret
+chatmsg_recv endp
 
 memcpy proc dest:pntr, src:pntr, len:uint32
 	cld

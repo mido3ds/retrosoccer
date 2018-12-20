@@ -155,6 +155,8 @@ Node STRUCT
 	prev pntr ?
 Node ENDS
 
+; eax = new Node
+list_init proto value:pntr
 list_insert proto l:ptr Node, value:pntr
 
 ; delteFunc: a function that deletes list nodes' values
@@ -189,6 +191,12 @@ chatmsg_getMsg proto cm:ptr ChatMsg
 
 ; modifes bb to fit in, bb.y0 is left as it is
 chatmsg_calcFitBB proto cm:ptr ChatMsg, bb:ptr AABB
+
+; eax = TRUE|FALSE
+chatmsg_send proto cm:ptr ChatMsg
+
+; eax = ptr new ChatMsg
+chatmsg_recv proto 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Bounding Box  							   ;;
