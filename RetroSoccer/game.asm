@@ -963,10 +963,10 @@ _CHS_LOWER_BAR_DIM equ <0,453,0,453,WND_WIDTH,WND_HEIGHT-453>
 _CHS_TEXTBOX_HEIGHT equ 33
 _CHS_TEXTBOX_DIM equ <30, 458, 720, 458+_CHS_TEXTBOX_HEIGHT>
 _CHS_TEXT_H_MARGIN equ 7
-_CHS_TEXT_V_MARGIN equ 12
+_CHS_TEXT_V_MARGIN equ 15
 _CHS_SCREEN_X0 equ _CHS_TEXT_H_MARGIN
 _CHS_SCREEN_X1 equ WND_WIDTH-_CHS_TEXT_H_MARGIN
-_CHS_SCREEN_Y1 equ 452+_CHS_TEXT_V_MARGIN
+_CHS_SCREEN_Y1 equ 452-20
 
 .const
 chatScreenFileName db "assets/chatScreen.bmp",0
@@ -974,6 +974,7 @@ chatScreenFileName db "assets/chatScreen.bmp",0
 .data
 _chs_closeBtn Button <10,5,57,53>
 _chs_sendBtn Button <736,458,785,497>
+_chs_y1 uint32 _CHS_SCREEN_Y1
 
 .data?
 _chs_screenBmp Bitmap ?
@@ -999,7 +1000,7 @@ chatScreen_onDraw proc
 
 	invoke renderBitmap, _chs_screenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
 
-	;TODO: drw chat messages
+	call drawChatMessages
 
 	invoke renderBitmap, _chs_screenBmp, _CHS_UPPER_BAR_DIM
 	invoke renderBitmap, _chs_screenBmp, _CHS_LOWER_BAR_DIM
@@ -1018,9 +1019,9 @@ chatScreen_onUpdate proc t:uint32
 			printfln "going to main screen",0
 			ret
 		.else
-			invoke changeScreen, CONNEC_ERROR_SCREEN
+			;invoke changeScreen, CONNEC_ERROR_SCREEN
 			printfln "chatScreen_onUpdate failed, going to connec error",0
-			ret
+			;ret
 		.endif
 	.endif
 
@@ -1041,7 +1042,18 @@ chatScreen_onUpdate proc t:uint32
 		.if (eax || sendIsClicked)
 			invoke sendSig, SIG_CHAT_DATA
 			call sendChatData
+			invoke memzero, offset _chs_buffer, CHAT_BUFFER_SIZE
+			mov _chs_i, 0
 		.endif 
+	.endif
+
+	; update scrolling 
+	call getScroll
+	mov ebx, 15
+	imul ebx
+	add _chs_y1, eax
+	.if (_chs_y1 < _CHS_SCREEN_Y1)
+		mov _chs_y1, _CHS_SCREEN_Y1
 	.endif
 	ret
 chatScreen_onUpdate endp
@@ -1068,7 +1080,7 @@ editMsg proc
 editMsg endp
 
 receiveChatData proc
-	local chatmsg:ChatMsg
+	local chatmsg:ptr ChatMsg
 
 	call chatmsg_recv
 	.if (!eax) ; TODO handle error
@@ -1086,7 +1098,7 @@ receiveChatData proc
 receiveChatData endp
 
 sendChatData proc
-	local chatmsg:ChatMsg
+	local chatmsg:ptr ChatMsg
 
 	; create chatmsg
 	invoke chatmsg_new, ME_IS_SENDER, offset _chs_buffer, _chs_i
@@ -1099,11 +1111,42 @@ sendChatData proc
 	.endif
 	mov _chs_list, eax
 	
-	invoke chatmsg_send, chatmsg
+	invoke chatmsg_send, addr chatmsg
 	; TODO check errors
 	ret
 sendChatData endp
 
+drawChatMessages proc
+	local fitBB:AABB, node:ptr Node, chatmsg:ptr ChatMsg
+
+	mov eax, _chs_list
+	mov node, eax
+
+	mov eax, _chs_y1
+	mov fitBB.y0, eax
+	sub fitBB.y0, 20
+	mov fitBB.y1, eax
+
+	.while (node)
+		; chatmsg = node->value
+		mov eax, node
+		assume eax:ptr Node
+		mov ebx, [eax].value
+		mov chatmsg, ebx
+
+		mov fitBB.x0, _CHS_SCREEN_X0
+		mov fitBB.x1, _CHS_SCREEN_X1
+
+		invoke chatmsg_draw, chatmsg, addr fitBB, _CHS_TEXT_V_MARGIN
+
+		; node = node->next
+		mov eax, node
+		assume eax:ptr Node
+		mov ebx, [eax].next
+		mov node, ebx
+	.endw
+	ret
+drawChatMessages endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;						Connection Error Screen         			   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

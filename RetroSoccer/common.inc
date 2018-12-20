@@ -189,8 +189,8 @@ chatmsg_getLen proto cm:ptr ChatMsg
 ; eax = cm->msg
 chatmsg_getMsg proto cm:ptr ChatMsg
 
-; modifes bb to fit in, bb.y0 is left as it is
-chatmsg_calcFitBB proto cm:ptr ChatMsg, bb:ptr AABB
+; eax = maxY
+chatmsg_draw proto cm:ptr ChatMsg, bb:ptr AABB, yMargin:uint32
 
 ; eax = TRUE|FALSE
 chatmsg_send proto cm:ptr ChatMsg

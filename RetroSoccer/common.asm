@@ -143,8 +143,6 @@ createAnotherProcess proc
 	mov al, byte ptr [eax]
 
 	.if (al != "-")
-		invoke memzero, addr sinf, sizeof STARTUPINFO
-		invoke memzero, addr pi, sizeof PROCESS_INFORMATION
 		mov sinf.cb, sizeof STARTUPINFO
 
 		invoke CreateProcess, NULL, offset _cap_buf, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, addr sinf, addr pi
@@ -185,7 +183,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		mov eax, wParam
 		mov edx, eax
 		sar edx, 16
-		mov ebx, -120
+		mov ebx, 120
 		idiv ebx
 		mov __scroll, eax
     .else
@@ -290,12 +288,10 @@ memset proc dest:pntr, data:byte, len:uint32
 memset endp
 
 memzero proc dest:pntr, len:uint32
-	.while TRUE
-		.break .if (len==0)
-		mov byte ptr [dest], 0
-		inc dest
-		dec len
-	.endw
+	mov ecx, len
+	mov edi, dest
+	mov al, 0
+	rep movsb
 	ret
 memzero endp
 
@@ -1183,6 +1179,8 @@ chatmsg_new proc sender:byte, msg:pntr, len:pntr
 	mov [ebx].msg, eax
 	invoke memcpy, [ebx].msg, msg, len
 
+	mov eax, newCM
+
 	ret
 chatmsg_new endp
 
@@ -1219,32 +1217,90 @@ chatmsg_getMsg proc cm:ptr ChatMsg
 	ret
 chatmsg_getMsg endp
 
-chatmsg_calcFitBB proc cm:ptr ChatMsg, bb:ptr AABB
+chatmsg_draw proc cm:ptr ChatMsg, bb:ptr AABB, yMargin:uint32
+	local height:uint32, msg:pntr, len:uint32, sender:byte
+
 	mov eax, cm
 	assume eax:ptr ChatMsg
 	mov ecx, [eax].len
+	mov len, ecx
+	mov ecx, [eax].msg
+	mov msg, ecx
+
 	mov bl, [eax].sender
-	mov eax, [eax].msg
-	.if (bl == ME_IS_SENDER)
-		invoke DrawText, __hdcTemp, eax, ecx, bb, DT_RIGHT or DT_CALCRECT or DT_WORDBREAK
-	.else
-		invoke DrawText, __hdcTemp, eax, ecx, bb, DT_LEFT or DT_CALCRECT or DT_WORDBREAK
+	mov sender, bl
+
+	; calc height
+	invoke DrawText, __hdcTemp, msg, len, bb, DT_LEFT or DT_CALCRECT or DT_WORDBREAK
+	mov height, eax
+
+	.if (bl == OTHER_IS_SENDER)
+		mov eax, bb
+		assume eax:ptr AABB
+		sub [eax].x0, WND_WIDTH
+		neg [eax].x0
+		sub [eax].x1, WND_WIDTH
+		neg [eax].x1
+
+		push [eax].x0
+		push [eax].x1
+		pop [eax].x0
+		pop [eax].x1
 	.endif
 
+	; bb->y0 = bb->y1 - height
+	mov eax, bb
+	assume eax:ptr AABB
+	mov ebx, [eax].y1
+	mov [eax].y0, ebx
+	mov ebx, height
+	sub [eax].y0, ebx
+
+	push bb
+	call _drawBoxAroundText
+
+	; draw
+	invoke DrawText, __hdcTemp, msg, len, bb,  DT_WORDBREAK
+
+	; calc bb for next chatmsg
+	mov eax, bb
+	assume eax:ptr AABB
+	mov ebx, yMargin
+	add ebx, height
+	sub [eax].y0, ebx ; bb->y0 -= yMargin + height
+	sub [eax].y1, ebx ; bb->y1 -= yMargin + height
 	ret
-chatmsg_calcFitBB endp
+chatmsg_draw endp
+
+_DB_MARGIN equ 2
+_drawBoxAroundText proc b:ptr AABB
+	mov eax, b
+	assume eax:ptr AABB
+	sub [eax].x0, _DB_MARGIN
+	add [eax].x1, _DB_MARGIN
+	sub [eax].y0, _DB_MARGIN
+	add [eax].y1, _DB_MARGIN
+	invoke RoundRect, __hdcTemp, [eax].x0, [eax].y0, [eax].x1, [eax].y1, 8, 8
+	mov eax, b
+	assume eax:ptr AABB
+	sub [eax].x0, -_DB_MARGIN
+	add [eax].x1, -_DB_MARGIN
+	sub [eax].y0, -_DB_MARGIN
+	add [eax].y1, -_DB_MARGIN
+	ret
+_drawBoxAroundText endp
 
 chatmsg_send proc cm:ptr ChatMsg
 	mov eax, cm
 	assume eax:ptr ChatMsg
-	invoke send, [eax].len
+	invoke send, [eax].len, 1
 	.if (!eax)
 		ret
 	.endif
 
 	mov eax, cm
 	assume eax:ptr ChatMsg
-	invoke send, [eax].msg
+	invoke send, [eax].msg, [eax].len
 	ret
 chatmsg_send endp
 
