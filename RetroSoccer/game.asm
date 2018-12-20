@@ -148,7 +148,7 @@ changeScreen proc screen:uint32
 	ret
 changeScreen endp
 
-goToPrevScreen proc
+goToPrevScreen proc		
 	mov eax, previousScreen
 	mov currentScreen, eax
 	mov previousScreen, CONNEC_ERROR_SCREEN
@@ -990,32 +990,36 @@ chatScreen_onCreate endp
 
 chatScreen_onDestroy proc
 	invoke deleteBitmap, _chs_screenBmp
+	.if (_chs_list)
+		invoke list_delete, _chs_list, offset chatmsg_delete
+	.endif
 	ret
 chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
-	local bb:AABB
+	invoke renderBitmap, _chs_screenBmp, 0, 0, 0, 0, WND_WIDTH,WND_HEIGHT ; all screen
+
 	invoke setBkMode, TRANSPARENT	
+	call drawChatMessages ; messages
 
-	invoke renderBitmap, _chs_screenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
-
-	call drawChatMessages
-
-	invoke renderBitmap, _chs_screenBmp, _CHS_UPPER_BAR_DIM
-	invoke renderBitmap, _chs_screenBmp, _CHS_LOWER_BAR_DIM
-	invoke drawText, offset _chs_buffer, _CHS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT
+	invoke renderBitmap, _chs_screenBmp, _CHS_UPPER_BAR_DIM ; upper bar
+	invoke renderBitmap, _chs_screenBmp, _CHS_LOWER_BAR_DIM ; lower bar
+	invoke drawText, offset _chs_buffer, _CHS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT ; to be send msg
 	ret
 chatScreen_onDraw endp
 
 chatScreen_onUpdate proc t:uint32
-	local sendIsClicked:bool
 	invoke recvSig
 	.if (eax) 
 		.if (eax == SIG_CHAT_DATA)
 			call receiveChatData
 		.elseif (eax == SIG_CHAT_CLOSE)
-			invoke changeScreen, MAIN_SCREEN
 			printfln "going to main screen",0
+			invoke changeScreen, MAIN_SCREEN
+			ret
+		.elseif (eax == SIG_EXIT)
+			printfln "going to connect screen[exited]",0
+			invoke changeScreen, CONNECTING_SCREEN
 			ret
 		.else
 			printfln "chatScreen_onUpdate failed, going to connec error, SIG=%i",eax
@@ -1023,8 +1027,6 @@ chatScreen_onUpdate proc t:uint32
 			ret
 		.endif
 	.endif
-
-	call editMsg
 
 	invoke btn_isClicked, _chs_closeBtn
 	.if (eax)
@@ -1036,13 +1038,11 @@ chatScreen_onUpdate proc t:uint32
 	; send msg
 	.if (_chs_i > 0)
 		invoke btn_isClicked, _chs_sendBtn
-		mov sendIsClicked, al
+		push eax
 		invoke isKeyPressed, VK_RETURN
-		.if (eax || sendIsClicked)
-			invoke sendSig, SIG_CHAT_DATA
+		pop ebx
+		.if (eax || ebx)
 			call sendChatData
-			invoke memzero, offset _chs_buffer, CHAT_BUFFER_SIZE
-			mov _chs_i, 0
 		.endif 
 	.endif
 
@@ -1054,6 +1054,8 @@ chatScreen_onUpdate proc t:uint32
 	.if (_chs_y1 < _CHS_SCREEN_Y1)
 		mov _chs_y1, _CHS_SCREEN_Y1
 	.endif
+
+	call editMsg
 	ret
 chatScreen_onUpdate endp
 
@@ -1081,11 +1083,16 @@ editMsg endp
 receiveChatData proc
 	local chatmsg:ptr ChatMsg
 
+	; recv chatmsg
 	call chatmsg_recv
-	.if (!eax) ; TODO handle error
+	.if (!eax)
+		printfln "couldn't send chat data, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN		
+		ret
 	.endif
 	mov chatmsg, eax
 
+	; add it to list
 	.if (!_chs_list)
 		invoke list_init, chatmsg
 	.else
@@ -1110,8 +1117,17 @@ sendChatData proc
 	.endif
 	mov _chs_list, eax
 	
-	invoke chatmsg_send, addr chatmsg
-	; TODO check errors
+	; send it
+	invoke sendSig, SIG_CHAT_DATA
+	invoke chatmsg_send, chatmsg
+	.if (!eax)
+		printfln "couldn't send chat data, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN		
+		ret
+	.endif
+
+	invoke memzero, offset _chs_buffer, CHAT_BUFFER_SIZE
+	mov _chs_i, 0
 	ret
 sendChatData endp
 

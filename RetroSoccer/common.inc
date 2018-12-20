@@ -845,6 +845,9 @@ opeConnection proto
 ; eax = TRUE|FALSE
 closeConnection proto
 
+; eax = TRUE|FALSE
+cleanPort proto
+
 ; blocks until event happens
 ; events: 
 EV_RXCHAR                            equ 1h

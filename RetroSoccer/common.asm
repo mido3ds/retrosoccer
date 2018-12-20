@@ -526,6 +526,11 @@ closeConnection proc
     ret
 closeConnection endp
 
+cleanPort proc
+	invoke PurgeComm, __portHndl, PURGE_TXCLEAR or PURGE_RXCLEAR
+	ret	
+cleanPort endp
+
 send proc buffer:ptr byte, n:uint32
     local numBytesSent:uint32
 	invoke WriteFile, __portHndl, buffer, n, addr numBytesSent, NULL
@@ -557,9 +562,9 @@ recvSig proc
 	invoke ReadFile, __portHndl, addr buffer, 1, addr numBytesRead, NULL
 
 	.if (numBytesRead == 0)
-		mov eax, 0
+		mov eax, NULL
 		ret
-	.elseif (buffer > MAX_NUM_SIGNALS)
+	.elseif (buffer > MAX_NUM_SIGNALS || (buffer == NULL && numBytesRead > 0))
 		mov eax, SIG_ERROR
 		ret
 	.endif
@@ -1300,14 +1305,23 @@ _drawBoxAroundText endp
 chatmsg_send proc cm:ptr ChatMsg
 	mov eax, cm
 	assume eax:ptr ChatMsg
-	invoke send, [eax].len, 1
-	.if (!eax)
+	lea ebx, [eax].len
+	invoke send, ebx, sizeof uint32
+	.if (eax != sizeof uint32)
+		mov eax, FALSE
 		ret
 	.endif
 
 	mov eax, cm
 	assume eax:ptr ChatMsg
 	invoke send, [eax].msg, [eax].len
+	mov ebx, cm
+	assume ebx:ptr ChatMsg
+	.if (eax != [ebx].len)
+		mov eax, FALSE
+		ret
+	.endif
+	mov eax, TRUE
 	ret
 chatmsg_send endp
 
@@ -1319,10 +1333,17 @@ chatmsg_recv proc
 	.code
 
 	invoke recv, addr len, sizeof uint32
+	.if (eax != sizeof uint32)
+		mov eax, NULL
+		ret
+	.endif
 	invoke recv, offset _cmr_buffer, len
-	; TODO check errors
+	.if (eax != len)
+		mov eax, NULL
+		ret
+	.endif
 
-	invoke chatmsg_new, OTHER_IS_SENDER, _cmr_buffer, len
+	invoke chatmsg_new, OTHER_IS_SENDER, offset _cmr_buffer, len
 	ret
 chatmsg_recv endp
 
