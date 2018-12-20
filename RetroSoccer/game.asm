@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 CHAT_SCREEN
+currentScreen uint32 TYPENAME_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool ?
@@ -300,17 +300,17 @@ connectingScreen_onDraw endp
 
 connectingScreen_onUpdate proc t:uint32
 	invoke recvSig
-	.if (!eax)
-		ret
-	.elseif (eax == SIG_CONNECT)
-		invoke changeScreen, MAIN_SCREEN
-		call sendName
-		call recvName
+	.if (eax)
+		.if (eax == SIG_CONNECT)
+			invoke changeScreen, MAIN_SCREEN
+			call sendName
+			call recvName
 
-		printfln "userName=%s,opponentName=%s", offset userName, offset opponentName
-	.else
-		printfln "connectingScreen_onUpdate failed, SIG=%i",eax
-		invoke changeScreen, CONNEC_ERROR_SCREEN
+			printfln "userName=%s,opponentName=%s", offset userName, offset opponentName
+		.else
+			printfln "connectingScreen_onUpdate failed, SIG=%i",eax
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+		.endif
 	.endif
 
 	ret
@@ -319,8 +319,8 @@ connectingScreen_onUpdate endp
 sendName proc
 	invoke send, offset userName, MAX_NAME_CHARS
 	.if (eax != MAX_NAME_CHARS)
+		printfln "sendName failed going to connec error screen, received=%ibytes expected=%ibytes",eax, MAX_NAME_CHARS
 		invoke changeScreen, CONNEC_ERROR_SCREEN
-		printfln "sendName failed",0
 	.endif
 
 	ret
@@ -329,8 +329,8 @@ sendName endp
 recvName proc
 	invoke recv, offset opponentName, MAX_NAME_CHARS
 	.if (eax != MAX_NAME_CHARS)
+		printfln "recvName failed going to connec error screen, received=%ibytes expected=%ibytes",eax, MAX_NAME_CHARS
 		invoke changeScreen, CONNEC_ERROR_SCREEN
-		printfln "recvName failed",0
 	.endif
 
 	ret
@@ -380,6 +380,10 @@ mainScreen_onUpdate proc t:uint32
 			invoke changeScreen, RECV_INV_SCREEN
 			printfln "going to recv invitation screen[chat]",0
 			ret
+		.elseif (eax == SIG_CHAT_START)
+			invoke changeScreen, CHAT_SCREEN
+			printfln "going to chat screen immediately",0
+			ret
 		.elseif (eax == SIG_EXIT)
 			invoke changeScreen, CONNECTING_SCREEN
 			printfln "going to connecting screen[exit]",0
@@ -401,10 +405,16 @@ mainScreen_onUpdate proc t:uint32
 
 	invoke btn_isClicked, _ms_chatBtn
 	.if (eax)
-		invoke sendSig, SIG_CHAT_INV
-		invoke changeScreen, SEND_INV_SCREEN
-		mov invitationType, INVTYPE_CHAT
-		printfln "going to send invitation screen[chat]",0
+		.if (!chatAccepted)
+			invoke sendSig, SIG_CHAT_INV
+			invoke changeScreen, SEND_INV_SCREEN
+			mov invitationType, INVTYPE_CHAT
+			printfln "going to send invitation screen[chat]",0
+		.else
+			invoke sendSig, SIG_CHAT_START
+			invoke changeScreen, CHAT_SCREEN
+			printfln "going to chat screen immediately",0
+		.endif
 	.endif
 
 	invoke btn_isClicked, _ms_exitBtn
@@ -449,12 +459,10 @@ sendInvitationScreen_onUpdate proc t:uint32
 	.if (eax)
 		.if (eax == SIG_ACCEPT_INV)
 			.if (invitationType == INVTYPE_CHAT) 
-				invoke sendSig, SIG_CHAT_START
 				invoke changeScreen, CHAT_SCREEN
 				printfln "going to chat screen",0
 				ret
 			.elseif (invitationType == INVTYPE_GAME) 
-				invoke sendSig, SIG_GAME_START
 				invoke changeScreen, GAME_SCREEN
 				printfln "going to game screen",0
 				ret
@@ -462,6 +470,10 @@ sendInvitationScreen_onUpdate proc t:uint32
 		.elseif (eax == SIG_DECLINE_INV)
 			invoke changeScreen, MAIN_SCREEN
 			printfln "invitation declined, going back to main screen",0
+			ret
+		.elseif (eax == SIG_EXIT)
+			invoke changeScreen, CONNECTING_SCREEN
+			printfln "other user exited, going to connecting screen",0
 			ret
 		.else
 			printfln "snedInvitationScreen_onUpdate failed, SIG=%i",eax
@@ -532,6 +544,10 @@ recvInvitationScreen_onUpdate proc t:uint32
 			invoke changeScreen, MAIN_SCREEN
 			printfln "invitation canceled, going back to main screen",0
 			ret
+		.elseif (eax == SIG_EXIT)
+			invoke changeScreen, CONNECTING_SCREEN
+			printfln "other user exited, going to connecting screen",0
+			ret
 		.else
 			printfln "recvInvitationScreen_onUpdate failed, goint to connec error screen, SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
@@ -547,6 +563,7 @@ recvInvitationScreen_onUpdate proc t:uint32
 			invoke changeScreen, WAIT_OP_SCREEN
 			printfln "going to waiting op screen[accept]",0
 		.elseif (invitationType == INVTYPE_CHAT)
+			mov chatAccepted, TRUE
 			invoke changeScreen, CHAT_SCREEN
 			printfln "going to chat screen[accept]",0
 		.endif
@@ -600,6 +617,10 @@ waitingScreen_onUpdate proc t:uint32
 			invoke changeScreen, GAME_SCREEN
 			printfln "game started, going to game screen",0
 			ret
+		.elseif (eax == SIG_EXIT)
+			invoke changeScreen, CONNECTING_SCREEN
+			printfln "other user exited, going to connecting screen",0
+			ret
 		.else
 			printfln "waitingScreen_onUpdate failed, going to connec error screen, SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
@@ -610,10 +631,27 @@ waitingScreen_onUpdate proc t:uint32
 waitingScreen_onUpdate endp
 
 recvGameInitialData proc
-	invoke recv, offset selectedLevel, 1
-	invoke recv, offset selectedColor, 1
-	invoke recv, offset selectedBallType, 1
-	; TODO check errors
+	invoke recv, offset selectedLevel, sizeof uint32
+	.if (eax != sizeof uint32)
+		printfln "couldn't receive selectedLevel, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
+	invoke recv, offset selectedColor, sizeof uint32
+	.if (eax != sizeof uint32)
+		printfln "couldn't receive selectedColor, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
+	invoke recv, offset selectedBallType, sizeof uint32
+	.if (eax != sizeof uint32)
+		printfln "couldn't receive selectedBallType, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
 	ret
 recvGameInitialData endp
 
@@ -641,7 +679,7 @@ initNonHostGameData proc
 	mov eax, 1
 	sub eax, selectedColor
 	; p1
-	mov p2.color, eax
+	mov p1.color, eax
 	ret
 initNonHostGameData endp
 
@@ -680,28 +718,21 @@ selectScreen_onDestroy endp
 selectScreen_onDraw proc
 	invoke renderBitmap, _ss_screenBmp, 0, 0, 0, 0, WND_WIDTH, WND_HEIGHT
 
-	; TODO: draw better rect, with no white background
 	.if (selectedLevel == 1)
-		; invoke drawRoundRect, _ss_lvl1Btn.x0, _ss_lvl1Btn.y0, _ss_lvl1Btn.x1, _ss_lvl1Btn.y1, _SS_ROUND_RADIUS
 		invoke drawFrameRect, offset _ss_lvl1Btn
 	.else
-		; invoke drawRoundRect, _ss_lvl2Btn.x0, _ss_lvl2Btn.y0, _ss_lvl2Btn.x1, _ss_lvl2Btn.y1, _SS_ROUND_RADIUS
 		invoke drawFrameRect, offset _ss_lvl2Btn
 	.endif
 
 	.if (selectedColor == PLAYER_COLOR_BLUE)
-		; invoke drawRoundRect, _ss_blueClrBtn.x0, _ss_blueClrBtn.y0, _ss_blueClrBtn.x1, _ss_blueClrBtn.y1, _SS_ROUND_RADIUS
 		invoke drawFrameRect, offset _ss_blueClrBtn
 	.else
-		; invoke drawRoundRect, _ss_redClrBtn.x0, _ss_redClrBtn.y0, _ss_redClrBtn.x1, _ss_redClrBtn.y1, _SS_ROUND_RADIUS
 		invoke drawFrameRect, offset _ss_redClrBtn
 	.endif
 
 	.if (selectedBallType == BALL_TYPE_1)
-		; invoke drawRoundRect, _ss_ball1Btn.x0, _ss_ball1Btn.y0, _ss_ball1Btn.x1, _ss_ball1Btn.y1, _SS_ROUND_RADIUS
 		invoke drawFrameRect, offset _ss_ball1Btn
 	.else
-		; invoke drawRoundRect, _ss_ball2Btn.x0, _ss_ball2Btn.y0, _ss_ball2Btn.x1, _ss_ball2Btn.y1, _SS_ROUND_RADIUS
 		invoke drawFrameRect, offset _ss_ball2Btn
 	.endif
 
@@ -709,6 +740,19 @@ selectScreen_onDraw proc
 selectScreen_onDraw endp
 
 selectScreen_onUpdate proc t:uint32
+	invoke recvSig
+	.if (eax)
+		.if (eax == SIG_EXIT)
+			printfln "other player exited, going to connecting screen",0
+			invoke changeScreen, CONNECTING_SCREEN
+			ret
+		.else
+			printfln "selectScreen_onUpdate failed, going to connec error screen, SIG=%i",eax
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			ret
+		.endif
+	.endif
+
 	invoke btn_isClicked, _ss_lvl1Btn
 	.if (eax) 
 		mov matchTotalTime, LV1_MATCH_TIME
@@ -756,10 +800,27 @@ selectScreen_onUpdate proc t:uint32
 selectScreen_onUpdate endp
 
 sendGameInitialData proc
-	invoke send, offset selectedLevel, 1
-	invoke send, offset selectedColor, 1
-	invoke send, offset selectedBallType, 1
-	; TODO check errors
+	invoke send, offset selectedLevel, sizeof uint32
+	.if (eax != sizeof uint32)
+		printfln "couldn't send selectedLevel, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
+	invoke send, offset selectedColor, sizeof uint32
+	.if (eax != sizeof uint32)
+		printfln "couldn't send selectedColor, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
+	invoke send, offset selectedBallType, sizeof uint32
+	.if (eax != sizeof uint32)
+		printfln "couldn't send selectedBallType, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
 	ret
 sendGameInitialData endp
 
@@ -1193,6 +1254,8 @@ connErrorScreen_onDraw proc
 connErrorScreen_onDraw endp
 
 connErrorScreen_onUpdate proc t:uint32
+	call cleanPort
+
 	invoke btn_isClicked, _ces_reconnectBtn
 	.if (eax)
 		invoke sendSig, SIG_CONNECT

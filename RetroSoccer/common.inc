@@ -864,7 +864,6 @@ waitConnEvent proto event:dword
 
 ; - send `n` bytes of `buffer`
 ; eax=num of bytes sent
-; eax=SUCCESS|FAIL
 send proto buffer:ptr byte, n:uint32
 
 ; - recieve and stores `n` bytes to `buffer` 
