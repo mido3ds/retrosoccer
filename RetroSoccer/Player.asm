@@ -42,7 +42,10 @@ player1_resetSticks proc
 	invoke vec_set, offset p1.stickPos[1 * sizeof Vec], STICK_1_X, 250
 	invoke vec_set, offset p1.stickPos[2 * sizeof Vec], STICK_2_X, 250
 	invoke vec_set, offset p1.stickPos[3 * sizeof Vec], STICK_3_X, 250
-	invoke memzero, addr p1.stickIsSelected, 4
+	mov p1.stickIsSelected[0], FALSE
+	mov p1.stickIsSelected[1], FALSE
+	mov p1.stickIsSelected[2], FALSE
+	mov p1.stickIsSelected[3], FALSE
 
 	ret
 player1_resetSticks endp
@@ -227,7 +230,10 @@ player2_resetSticks proc
 	invoke vec_set, offset p2.stickPos[1 * sizeof Vec], WND_WIDTH-STICK_1_X, 250
 	invoke vec_set, offset p2.stickPos[2 * sizeof Vec], WND_WIDTH-STICK_2_X, 250
 	invoke vec_set, offset p2.stickPos[3 * sizeof Vec], WND_WIDTH-STICK_3_X, 250
-	invoke memzero, addr p2.stickIsSelected, 4
+	mov p2.stickIsSelected[0], FALSE
+	mov p2.stickIsSelected[1], FALSE
+	mov p2.stickIsSelected[2], FALSE
+	mov p2.stickIsSelected[3], FALSE
 
 	ret
 player2_resetSticks endp

@@ -288,6 +288,7 @@ memset proc dest:pntr, data:byte, len:uint32
 memset endp
 
 memzero proc dest:pntr, len:uint32
+	cld
 	mov ecx, len
 	mov edi, dest
 	mov al, 0

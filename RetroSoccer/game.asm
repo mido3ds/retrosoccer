@@ -463,8 +463,8 @@ sendInvitationScreen_onUpdate proc t:uint32
 				printfln "going to chat screen",0
 				ret
 			.elseif (invitationType == INVTYPE_GAME) 
-				invoke changeScreen, GAME_SCREEN
-				printfln "going to game screen",0
+				invoke changeScreen, SELECT_SCREEN
+				printfln "going to select screen",0
 				ret
 			.endif
 		.elseif (eax == SIG_DECLINE_INV)
@@ -609,7 +609,6 @@ waitingScreen_onUpdate proc t:uint32
 	invoke recvSig
 	.if (eax)
 		.if (eax == SIG_GAME_START)
-			mov isHost, FALSE
 			call recvGameInitialData
 
 			call initNonHostGameData
@@ -656,6 +655,8 @@ recvGameInitialData proc
 recvGameInitialData endp
 
 initNonHostGameData proc
+	mov isHost, FALSE
+
 	; init ball
 	invoke vec_set, addr ball.pos, BALL_START_SEC
 	invoke vec_set, addr ball.spd, 0, 0
@@ -786,7 +787,6 @@ selectScreen_onUpdate proc t:uint32
 	.if (eax)
 		printfln "selectedLevel=%i,selectedColor=%i,selectedBallType=%i",selectedLevel, selectedColor, selectedBallType
 
-		mov isHost, TRUE
 		call initHostGameData
 
 		invoke sendSig, SIG_GAME_START
@@ -825,6 +825,8 @@ sendGameInitialData proc
 sendGameInitialData endp
 
 initHostGameData proc
+	mov isHost, TRUE
+
 	; init ball
 	invoke vec_set, addr ball.pos, BALL_START_FIRST 
 	invoke vec_set, addr ball.spd, 0, 0
@@ -973,14 +975,25 @@ gameoverScreen_onDraw proc
 gameoverScreen_onDraw endp
 
 gameoverScreen_onUpdate proc t:uint32
+	call recvSig
+	.if (eax)
+		.if (eax == SIG_EXIT)
+			printfln "other player exited, going to connect screen",0
+			invoke changeScreen, CONNECTING_SCREEN
+			ret
+		.else
+			printfln "gameoverScreen_onUpdate failed, going to connec error screen, SIG=%i",eax
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			ret
+		.endif
+	.endif
+
 	mov eax, t
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= GAME_OVER_SCREEN_TOTAL_TIME)
-		invoke sendSig, SIG_GAME_FINISH
-
 		invoke changeScreen, MAIN_SCREEN
-		printfln "game ended, going to game over screen",0
+		printfln "going to main screen",0
 		mov elapsedTime, 0
 	.endif
 
