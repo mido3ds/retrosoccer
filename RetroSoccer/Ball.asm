@@ -95,15 +95,44 @@ ball_update endp
 
 ball_send proc 
 	invoke send, offset ball.pos, sizeof Vec
+	.if (eax != sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
 	invoke send, offset ball.spd, sizeof Vec
-	; TODO check for errors
+	.if (eax != sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
+	mov eax,TRUE
     ret
 ball_send endp
 
 ball_recv proc 
 	invoke recv, offset ball.pos, sizeof Vec
+	.if (eax != sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
 	invoke recv, offset ball.spd, sizeof Vec
-	; TODO check for errors
+	.if (eax != sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
+	; reflect ball
+	sub ball.pos.x, WND_WIDTH
+	neg ball.pos.x
+	sub ball.pos.y, WND_HEIGHT
+	neg ball.pos.y
+
+	neg ball.spd.x
+	neg ball.spd.y
+
+	mov eax,TRUE
     ret
 ball_recv endp
 

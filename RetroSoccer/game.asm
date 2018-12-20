@@ -13,6 +13,7 @@ userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool ?
 chatAccepted bool FALSE
+matchTotalTime uint32 ?
 
 selectedLevel uint32 1
 selectedBallType uint32 BALL_TYPE_1
@@ -657,6 +658,13 @@ recvGameInitialData endp
 initNonHostGameData proc
 	mov isHost, FALSE
 
+	; init match
+	.if (selectedLevel == 1) 
+		mov matchTotalTime, LV1_MATCH_TIME
+	.else 
+		mov matchTotalTime, LV2_MATCH_TIME
+	.endif
+
 	; init ball
 	invoke vec_set, addr ball.pos, BALL_START_SEC
 	invoke vec_set, addr ball.spd, 0, 0
@@ -827,6 +835,13 @@ sendGameInitialData endp
 initHostGameData proc
 	mov isHost, TRUE
 
+	; init match
+	.if (selectedLevel == 1)
+		mov matchTotalTime, LV1_MATCH_TIME
+	.else
+		mov matchTotalTime, LV2_MATCH_TIME
+	.endif
+
 	; init ball
 	invoke vec_set, addr ball.pos, BALL_START_FIRST 
 	invoke vec_set, addr ball.spd, 0, 0
@@ -867,7 +882,6 @@ field Bitmap ?
 sprites Bitmap ?
 bluePen Pen ?
 redPen Pen ?
-matchTotalTime uint32 ?
 
 .code
 gameScreen_onCreate proc
@@ -902,10 +916,55 @@ gameScreen_onDraw proc
 gameScreen_onDraw endp
 
 gameScreen_onUpdate proc t:uint32
+	call recvSig
+	.if (eax)
+		.if (eax == SIG_GAME_DATA)
+			call player2_recv
+			.if (!eax)
+				printfln "couldn't recv player2, going to conn error screen",0
+				invoke changeScreen, CONNEC_ERROR_SCREEN
+				ret
+			.endif
+
+			.if (!isHost)
+				call ball_recv
+				.if (!eax)
+					printfln "couldn't recv ball, going to conn error screen",0
+					invoke changeScreen, CONNEC_ERROR_SCREEN
+					ret
+				.endif
+			.endif
+		.elseif (eax == SIG_EXIT)
+			printfln "other user exited, going to connecting screen",0
+			invoke changeScreen, CONNECTING_SCREEN
+			ret
+		.else
+			printfln "gameScreen_onUpdate failed, going to connec error screen",0
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			ret
+		.endif
+	.endif
+	
+	; update and send
 	call player1_update
+	invoke sendSig, SIG_GAME_DATA
 	call player1_send
-	call player2_recv
-	call ball_update
+	.if (!eax)
+		printfln "couldn't send player1, going to conn error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+
+	.if (isHost)
+		call ball_send
+		.if (!eax)
+			printfln "couldn't send ball, going to conn error screen",0
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			ret
+		.endif
+
+		call ball_update
+	.endif
 
 	mov eax, t
 	add elapsedTime, eax

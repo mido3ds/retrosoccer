@@ -209,9 +209,24 @@ player1_updateFigs endp
 
 player1_send proc
 	invoke send, offset p1.stickPos, 4 * sizeof Vec
+	.if (eax != 4 * sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
 	invoke send, offset p1.figPos, 11 * sizeof Vec
+	.if (eax != 11 * sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
 	invoke send, offset p1.legPos, 11 * sizeof Vec
-	; TODO check for errors
+	.if (eax != 11 * sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
+	mov eax, TRUE
 	ret
 player1_send endp
 
@@ -297,10 +312,69 @@ player2_draw proc
 player2_draw endp
 
 player2_recv proc
+	local i:uint32
 	invoke recv, offset p2.stickPos, 4 * sizeof Vec
+	.if (eax != 4 * sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
 	invoke recv, offset p2.figPos, 11 * sizeof Vec
+	.if (eax != 11 * sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
 	invoke recv, offset p2.legPos, 11 * sizeof Vec
-	; TODO check for errors
+	.if (eax != 11 * sizeof Vec)
+		mov eax, FALSE
+		ret
+	.endif
+
+	; reflect sticks, figs and legs
+	mov i, 0
+	.while (i<4)
+		mov eax, i
+		lea eax, p2.stickPos[eax * sizeof Vec]
+		assume eax:ptr Vec
+
+		sub [eax].x, WND_WIDTH
+		sub [eax].y, WND_HEIGHT
+		neg [eax].x
+		neg [eax].y
+
+		inc i
+	.endw
+
+	mov i, 0
+	.while (i<11)
+		mov eax, i
+		lea eax, p2.figPos[eax * sizeof Vec]
+		assume eax:ptr Vec
+
+		sub [eax].x, WND_WIDTH
+		sub [eax].y, WND_HEIGHT
+		neg [eax].x
+		neg [eax].y
+
+		inc i
+	.endw
+
+	mov i, 0
+	.while (i<11)
+		mov eax, i
+		lea eax, p2.figPos[eax * sizeof Vec]
+		assume eax:ptr Vec
+
+		sub [eax].x, WND_WIDTH
+		sub [eax].y, WND_HEIGHT
+		neg [eax].x
+		neg [eax].y
+
+		inc i
+	.endw
+
+	mov eax, TRUE
 	ret
 player2_recv endp
 
