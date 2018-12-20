@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 LOGO_SCREEN
+currentScreen uint32 CHAT_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool ?
@@ -958,8 +958,15 @@ writeFinalResult endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Chat Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+_CHS_UPPER_BAR_DIM equ <0,0,0,0,WND_WIDTH,59>
+_CHS_LOWER_BAR_DIM equ <0,453,0,453,WND_WIDTH,WND_HEIGHT-453>
 _CHS_TEXTBOX_HEIGHT equ 33
 _CHS_TEXTBOX_DIM equ <30, 458, 720, 458+_CHS_TEXTBOX_HEIGHT>
+_CHS_TEXT_H_MARGIN equ 7
+_CHS_TEXT_V_MARGIN equ 12
+_CHS_SCREEN_X0 equ _CHS_TEXT_H_MARGIN
+_CHS_SCREEN_X1 equ WND_WIDTH-_CHS_TEXT_H_MARGIN
+_CHS_SCREEN_Y1 equ 452+_CHS_TEXT_V_MARGIN
 
 .const
 chatScreenFileName db "assets/chatScreen.bmp",0
@@ -986,8 +993,15 @@ chatScreen_onDestroy proc
 chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
-	invoke renderBitmap, _chs_screenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
+	local bb:AABB
 	invoke setBkMode, TRANSPARENT	
+
+	invoke renderBitmap, _chs_screenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
+
+	;TODO: drw chat messages
+
+	invoke renderBitmap, _chs_screenBmp, _CHS_UPPER_BAR_DIM
+	invoke renderBitmap, _chs_screenBmp, _CHS_LOWER_BAR_DIM
 	invoke drawText, offset _chs_buffer, _CHS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT
 	ret
 chatScreen_onDraw endp
@@ -1008,6 +1022,9 @@ chatScreen_onUpdate proc t:uint32
 			ret
 		.endif
 	.endif
+
+	call getScroll
+	printfln "scroll=%i",eax
 
 	call editMsg
 

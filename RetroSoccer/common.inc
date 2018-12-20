@@ -156,7 +156,39 @@ Node STRUCT
 Node ENDS
 
 list_insert proto l:ptr Node, value:pntr
-list_delete proto l:ptr Node
+
+; delteFunc: a function that deletes list nodes' values
+list_delete proto l:ptr Node, deleteFunc:pntr
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;							ChatMsg		   							   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ME_IS_SENDER equ 0
+OTHER_IS_SENDER equ 1
+
+ChatMsg STRUCT
+	sender byte ?
+	len uint32 ?
+	msg pntr ? ; ptr char
+ChatMsg ENDS
+
+; eax=ptr to new ChatMsg
+chatmsg_new proto sender:byte, msg:pntr, len:pntr
+
+; eax=TRUE|FALSE
+chatmsg_delete proto cm:ptr ChatMsg
+
+; al = cm->sender
+chatmsg_getSender proto cm:ptr ChatMsg
+
+; eax = cm->len
+chatmsg_getLen proto cm:ptr ChatMsg
+
+; eax = cm->msg
+chatmsg_getMsg proto cm:ptr ChatMsg
+
+; modifes bb to fit in, bb.y0 is left as it is
+chatmsg_calcFitBB proto cm:ptr ChatMsg, bb:ptr AABB
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Bounding Box  							   ;;
@@ -382,10 +414,7 @@ memset proto dest:pntr, data:byte, len:uint32
 memzero proto dest:pntr, len:uint32
 
 ; - copy `len` bytes from `src` to `dest`
-;
-; linux memcpy: https://linux.die.net/man/3/memcpy
-memcpy equ <CopyMemory>
-CopyMemory proto dest:pntr, src:pntr, len:uint32
+memcpy proto dest:pntr, src:pntr, len:uint32
 
 ; - size of HEAP memory at address `mem`
 ; eax = mem.size
@@ -776,6 +805,9 @@ moveMouseToY proto y:uint32
 
 showMouse proto
 hideMouse proto
+
+; eax = ..|-1|-2|0|1|2|..
+getScroll proto 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							sound   								   ;;

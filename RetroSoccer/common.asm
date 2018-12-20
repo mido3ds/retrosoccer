@@ -47,6 +47,7 @@ __portNum uint32 ?
 __portHndl HANDLE ?
 __worldX int32 ?
 __worldY int32 ?
+__scroll int32 ?
 
 .CODE
 start proc
@@ -179,6 +180,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 	.elseif uMsg==WM_CHAR
 		push wParam
 		pop __charInput
+	.elseif uMsg==WM_MOUSEWHEEL
+		sar wParam, 16
+		mov eax, wParam
+		mov edx, eax
+		sar edx, 16
+		mov ebx, -120
+		idiv ebx
+		mov __scroll, eax
     .else
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
         ret 
@@ -199,6 +208,7 @@ timerCallback proc	hwnd:HWND, msg:UINT, idTimer:UINT, dwTime:DWORD
 	invoke swapBuffers
 
 	mov __charInput, NULL
+	mov __scroll, 0
 
 	ret
 timerCallback endp
@@ -1126,11 +1136,12 @@ list_insert proc l:ptr Node, value:pntr
 	ret
 list_insert endp
 
-list_delete proc l:ptr Node
+list_delete proc l:ptr Node, deleteFunc:pntr
 	.while (l)
 		mov eax, l
 		assume eax:ptr Node
-		invoke free, [eax].value
+		push [eax].value
+		call deleteFunc
 
 		mov eax, l
 		assume eax:ptr Node
@@ -1140,5 +1151,91 @@ list_delete proc l:ptr Node
 	.endw
 	ret
 list_delete endp
+
+; eax=ptr to new ChatMsg
+chatmsg_new proc sender:byte, msg:pntr, len:pntr
+	local newCM:ptr ChatMsg
+
+	invoke malloc, sizeof ChatMsg
+	mov newCM, eax
+	assume eax:ptr ChatMsg
+
+	mov bl, sender
+	mov [eax].sender, bl
+
+	mov ebx, len
+	mov [eax].len, ebx
+
+	; copy msg
+	invoke malloc, len
+	mov ebx, newCM
+	assume ebx:ptr ChatMsg
+	mov [ebx].msg, eax
+	invoke memcpy, [ebx].msg, msg, len
+
+	ret
+chatmsg_new endp
+
+; eax=TRUE|FALSE
+chatmsg_delete proc cm:ptr ChatMsg
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	invoke free, [eax].msg
+	invoke free, eax
+	ret
+chatmsg_delete endp
+
+; al = cm->sender
+chatmsg_getSender proc cm:ptr ChatMsg
+	mov eax, cm
+	assume eax:ptr ChatMsg	
+	mov al, [eax].sender
+	ret
+chatmsg_getSender endp
+
+; eax = cm->len
+chatmsg_getLen proc cm:ptr ChatMsg
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	mov eax, [eax].len
+	ret
+chatmsg_getLen endp
+
+; eax = cm->msg
+chatmsg_getMsg proc cm:ptr ChatMsg
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	mov eax, [eax].msg
+	ret
+chatmsg_getMsg endp
+
+chatmsg_calcFitBB proc cm:ptr ChatMsg, bb:ptr AABB
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	mov ecx, [eax].len
+	mov bl, [eax].sender
+	mov eax, [eax].msg
+	.if (bl == ME_IS_SENDER)
+		invoke DrawText, __hdcTemp, eax, ecx, bb, DT_RIGHT or DT_CALCRECT or DT_WORDBREAK
+	.else
+		invoke DrawText, __hdcTemp, eax, ecx, bb, DT_LEFT or DT_CALCRECT or DT_WORDBREAK
+	.endif
+
+	ret
+chatmsg_calcFitBB endp
+
+memcpy proc dest:pntr, src:pntr, len:uint32
+	cld
+	mov edi, dest
+	mov esi, src
+	mov ecx, len
+	rep movsb
+	ret
+memcpy endp
+
+getScroll proc
+	mov eax, __scroll
+	ret
+getScroll endp
 
 end start
