@@ -958,6 +958,9 @@ writeFinalResult endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Chat Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+_CHS_TEXTBOX_HEIGHT equ 33
+_CHS_TEXTBOX_DIM equ <30, 458, 720, 458+_CHS_TEXTBOX_HEIGHT>
+
 .const
 chatScreenFileName db "assets/chatScreen.bmp",0
 
@@ -984,12 +987,13 @@ chatScreen_onDestroy endp
 
 chatScreen_onDraw proc
 	invoke renderBitmap, _chs_screenBmp, 0,0,0,0,WND_WIDTH,WND_HEIGHT
+	invoke setBkMode, TRANSPARENT	
+	invoke drawText, offset _chs_buffer, _CHS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT
 	ret
 chatScreen_onDraw endp
 
 chatScreen_onUpdate proc t:uint32
 	local sendIsClicked:bool
-
 	invoke recvSig
 	.if (eax) 
 		.if (eax == SIG_CHAT_DATA)

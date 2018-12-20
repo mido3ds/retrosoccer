@@ -262,6 +262,10 @@ alphaBlend proto bitmap:Bitmap, xs:uint32, ys:uint32, xb:uint32, yb:uint32, w:ui
 ; If the function fails, the return value is zero.
 drawText proto buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:uint32
 
+; no drawing
+; eax=height
+getTextHeight proto buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:uint32
+
 ; eax=previous color|CLR_INVALID
 setTextColor proto color:Color
 
@@ -336,7 +340,7 @@ DT_RTLREADING       			  equ 20000h
 DT_WORD_ELLIPSIS    			  equ 40000h
 CLR_INVALID                          equ 0FFFFh
 
-; available waits for createFont
+; available weights for createFont
 FW_DONTCARE                          equ 0
 FW_THIN                              equ 100
 FW_EXTRALIGHT                        equ 200

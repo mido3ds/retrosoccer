@@ -696,6 +696,30 @@ drawText proc buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:u
     ret
 drawText endp
 
+getTextHeight proc buf:ptr char, x1:uint32, y1:uint32, x2:uint32, y2:uint32, format:uint32
+	local rect:RECT
+
+	; add to origin
+	mov eax, x1
+	add eax, __worldX
+	mov rect.left, eax
+	mov eax, x2
+	add eax, __worldX
+	mov rect.right, eax
+
+	mov eax, y1
+	add eax, __worldY
+	mov rect.top, eax
+	mov eax, y2
+	add eax, __worldY
+	mov rect.bottom, eax
+
+	or format, DT_CALCRECT
+
+	invoke DrawText, __hdcTemp, buf, -1, addr rect, format
+	ret
+getTextHeight endp
+
 ; eax=previous color|CLR_INVALID
 setTextColor proc color:Color
 	invoke SetTextColor, __hdcTemp, color
