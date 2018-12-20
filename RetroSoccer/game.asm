@@ -102,7 +102,6 @@ onUpdate proc t:uint32
 	printf "mouse(%03i,%03i),", mousePos.x, mousePos.y
 	printf "f[%i,%i,%i,%i],", p1.stickIsSelected[0], p1.stickIsSelected[1], p1.stickIsSelected[2], p1.stickIsSelected[3]
 	printf "elapsedTime=%i,", elapsedTime
-	printf "selectedLevel=%i,", selectedLevel
 
 	ret
 onUpdate endp
@@ -1019,9 +1018,9 @@ chatScreen_onUpdate proc t:uint32
 			printfln "going to main screen",0
 			ret
 		.else
-			;invoke changeScreen, CONNEC_ERROR_SCREEN
-			printfln "chatScreen_onUpdate failed, going to connec error",0
-			;ret
+			printfln "chatScreen_onUpdate failed, going to connec error, SIG=%i",eax
+			invoke changeScreen, CONNEC_ERROR_SCREEN
+			ret
 		.endif
 	.endif
 

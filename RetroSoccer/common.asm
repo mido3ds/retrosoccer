@@ -555,10 +555,17 @@ sendSig endp
 recvSig proc
 	local buffer:byte, numBytesRead:uint32
 	invoke ReadFile, __portHndl, addr buffer, 1, addr numBytesRead, NULL
-	mov al, buffer
-	.if (al > MAX_NUM_SIGNALS)
-		mov al, NULL
+
+	.if (numBytesRead == 0)
+		mov eax, 0
+		ret
+	.elseif (buffer > MAX_NUM_SIGNALS)
+		mov eax, SIG_ERROR
+		ret
 	.endif
+
+	xor eax, eax
+	mov al, buffer
 	ret
 recvSig endp
 
