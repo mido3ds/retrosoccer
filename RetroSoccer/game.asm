@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 LOGO_SCREEN
+currentScreen uint32 CHAT_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool ?
@@ -344,9 +344,9 @@ recvName endp
 mainScreenFileName db "assets/mainScreen.bmp",0
 
 .data
-_ms_playBtn Button <349, 224, 450, 272>
-_ms_chatBtn Button <345, 289, 452, 337>
-_ms_exitBtn Button <350, 355, 452, 401>
+_ms_playBtn Button <443,248,549,299>
+_ms_chatBtn Button <250,246,355,298>
+_ms_exitBtn Button <346,322,453,373>
 
 .data?
 _ms_screenBmp Bitmap ?
@@ -1365,7 +1365,15 @@ connErrorScreen_onDraw proc
 connErrorScreen_onDraw endp
 
 connErrorScreen_onUpdate proc t:uint32
-	call cleanPort
+	invoke recvSig
+	.if (eax)
+		.if (eax == SIG_CONNECT)
+			invoke changeScreen, MAIN_SCREEN
+			ret
+		.else
+			invoke cleanPort
+		.endif
+	.endif
 
 	invoke btn_isClicked, _ces_reconnectBtn
 	.if (eax)
