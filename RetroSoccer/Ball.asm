@@ -3,6 +3,8 @@ EXCLUDE_EXTERNS=1
 include Ball.inc
 
 public ball
+ballEnteredLeftGoal proto
+ballEnteredRightGoal proto
 extern sprites:Bitmap
 
 .const
@@ -30,22 +32,10 @@ ball_update proc
 	; detect collision with goals
 	.if (ballBB.y0 >= 175 && ballBB.y1 <= 325)
 		.if (ballBB.x0 <= 11) ; left
-			call player1_resetSticks
-			call player2_resetSticks
-			call player2_resetFigs
-
-			inc p2.score
-			invoke vec_set, addr ball.pos, BALL_START_POS
-			invoke vec_set, addr ball.spd, 0, 0
+			call ballEnteredLeftGoal
 			ret
 		.elseif (ballBB.x1 >= 788) ; right
-			call player1_resetSticks
-			call player2_resetSticks
-			call player2_resetFigs
-
-			inc p1.score
-			invoke vec_set, addr ball.pos, BALL_START_POS
-			invoke vec_set, addr ball.spd, 0, 0
+			call ballEnteredRightGoal
 			ret
 		.endif
 	.endif
@@ -87,8 +77,6 @@ ball_update proc
 	.endif
 
 	invoke vec_add, addr ball.pos, addr ball.spd
-	
-	printf "colDir(%02i,%02i),ball.spd(%02i,%02i),", colDir.x, colDir.y, ball.spd.x, ball.spd.y
 
 	ret
 ball_update endp

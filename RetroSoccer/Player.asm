@@ -395,5 +395,38 @@ player2_recv proc
 	ret
 player2_recv endp
 
+sendScore proc
+	invoke sendSig, SIG_GOAL
+	invoke send, offset p1.score, sizeof uint32
+	.if (eax != sizeof uint32)
+		mov eax, FALSE
+		ret
+	.endif
+	invoke send, offset p2.score, sizeof uint32
+	.if (eax != sizeof uint32)
+		mov eax, FALSE
+		ret
+	.endif
+
+	mov eax, TRUE
+	ret
+sendScore endp
+
+recvScore proc
+	invoke recv, offset p2.score, sizeof uint32
+	.if (eax != sizeof uint32)
+		mov eax, FALSE
+		ret
+	.endif
+	invoke recv, offset p1.score, sizeof uint32
+	.if (eax != sizeof uint32)
+		mov eax, FALSE
+		ret
+	.endif
+
+	mov eax, TRUE
+	ret
+recvScore endp
+
 
 end player_asm

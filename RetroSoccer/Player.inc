@@ -33,4 +33,7 @@ player2_resetFigs proto
 player2_draw proto
 player2_recv proto
 
+sendScore proto
+recvScore proto
+
 endif

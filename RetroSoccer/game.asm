@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 TYPENAME_SCREEN
+currentScreen uint32 LOGO_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool ?
@@ -666,13 +666,6 @@ initNonHostGameData proc
 	.endif
 
 	; init ball
-	invoke vec_set, addr ball.pos, BALL_START_POS
-	invoke vec_set, addr ball.spd, 0, 0
-	.if (selectedLevel == 1)
-		mov ball.speedScalar, LV1_BALL_SPD
-	.else 
-		mov ball.speedScalar, LV2_BALL_SPD
-	.endif
 	mov eax, selectedBallType
 	mov ball.ballType, eax
 
@@ -934,9 +927,15 @@ gameScreen_onUpdate proc t:uint32
 					ret
 				.endif
 			.endif
-		.elseif (eax == SIG_GAME_FINISH)
-			printfln "game finished going to game over screen",0
-			invoke changeScreen, GAME_OVER_SCREEN
+		.elseif (eax == SIG_GOAL)
+			call recvScore
+			.if (!eax) 
+				printfln "couldn't recv score, going to connec error screen",0
+				invoke changeScreen, CONNEC_ERROR_SCREEN
+				ret
+			.endif
+
+			call player1_resetSticks
 		.elseif (eax == SIG_EXIT)
 			printfln "other user exited, going to connecting screen",0
 			invoke changeScreen, CONNECTING_SCREEN
@@ -973,8 +972,8 @@ gameScreen_onUpdate proc t:uint32
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= matchTotalTime)
-		invoke cleanPort
-		invoke sendSig, SIG_GAME_FINISH
+		printfln "game finished going to game over screen",0
+		invoke changeScreen, GAME_OVER_SCREEN
 		mov elapsedTime, 0
 	.endif
 
@@ -1009,6 +1008,38 @@ writeScore proc
 	ret
 writeScore endp
 
+ballEnteredLeftGoal proc
+	call player1_resetSticks
+
+	inc p2.score
+	invoke vec_set, addr ball.pos, BALL_START_POS2
+	invoke vec_set, addr ball.spd, 0, 0
+
+	call sendScore
+	.if (!eax)
+		printfln "couldn't send score, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+	ret
+ballEnteredLeftGoal endp
+
+ballEnteredRightGoal proc	
+	call player1_resetSticks
+	
+	inc p1.score
+	invoke vec_set, addr ball.pos, BALL_START_POS
+	invoke vec_set, addr ball.spd, 0, 0
+
+	call sendScore
+	.if (!eax)
+		printfln "couldn't send score, going to connec error screen",0
+		invoke changeScreen, CONNEC_ERROR_SCREEN
+		ret
+	.endif
+	ret
+ballEnteredRightGoal endp
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Gameover Screen     					   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1040,7 +1071,9 @@ gameoverScreen_onDraw endp
 gameoverScreen_onUpdate proc t:uint32
 	call recvSig
 	.if (eax)
-		.if (eax == SIG_EXIT)
+		.if (eax == SIG_GAME_DATA || eax == SIG_GOAL) ; ignore those signals
+			invoke cleanPort
+		.elseif (eax == SIG_EXIT)
 			printfln "other player exited, going to connect screen",0
 			invoke changeScreen, CONNECTING_SCREEN
 			ret
@@ -1070,8 +1103,8 @@ writeFinalResult proc
 
 	.CONST
 	finalResultFormat db "%s",0
-	finalScoreFormat db "Score: %i - %i",0
-	drawResultStr db "Draw",0
+	finalScoreFormat db "%s: %i - %s %i",0
+	drawResultStr db "Draw, Nobody won",0
 	.DATA
 	finalResultBuf db 100 dup(0)
 	.CODE
@@ -1088,7 +1121,7 @@ writeFinalResult proc
 	invoke sprintf, offset finalResultBuf, offset finalResultFormat, playerWon
 	invoke drawText, offset finalResultBuf, 283, 297, 514, 385, DT_LEFT or DT_CENTER
 
-	invoke sprintf, offset finalResultBuf, offset finalScoreFormat, p1.score, p2.score
+	invoke sprintf, offset finalResultBuf, offset finalScoreFormat, offset userName, p1.score, offset opponentName, p2.score
 	invoke drawText, offset finalResultBuf, 283, 297+20, 514, 385+20, DT_LEFT or DT_CENTER
 	ret
 writeFinalResult endp
