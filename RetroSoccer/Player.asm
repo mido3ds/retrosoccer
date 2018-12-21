@@ -144,7 +144,7 @@ player1_updateSticks proc
 	mov i, 0
 	.while (i < 4)
 		mov eax, i
-		.if (p1.stickIsSelected[eax] == TRUE)
+		.if (p1.stickIsSelected[eax])
 			mov ebx, mousePos.y
 			mov p1.stickPos[eax * sizeof Vec].y, ebx
 
@@ -196,7 +196,7 @@ player1_updateFigs proc
 
 		; legPos[i].x += kickDir
 		mov eax, figStickNum[ebx * sizeof uint32]
-		.if (p1.stickIsSelected[eax] == TRUE)
+		.if (p1.stickIsSelected[eax])
 			mov eax, p1.kickDir
 			add p1.legPos[ebx * sizeof Vec].x, eax
 		.endif
@@ -208,20 +208,29 @@ player1_updateFigs proc
 player1_updateFigs endp
 
 player1_send proc
-	invoke send, offset p1.stickPos, 4 * sizeof Vec
-	.if (eax != 4 * sizeof Vec)
+	local i:uint32
+	invoke send, offset p1.kickDir, sizeof int32
+	.if (eax != sizeof uint32)
 		mov eax, FALSE
 		ret
 	.endif
 
-	invoke send, offset p1.figPos, 11 * sizeof Vec
-	.if (eax != 11 * sizeof Vec)
-		mov eax, FALSE
-		ret
-	.endif
+	mov i, 0
+	.while (i < 4)
+		mov eax, i
+		lea eax, p1.stickPos[eax * sizeof Vec]
+		add eax, sizeof uint32
+		invoke send, eax, sizeof uint32 ; send p1.stickPos[i].y
+		.if (eax != sizeof uint32)
+			mov eax, FALSE
+			ret
+		.endif
 
-	invoke send, offset p1.legPos, 11 * sizeof Vec
-	.if (eax != 11 * sizeof Vec)
+		inc i
+	.endw
+
+	invoke send, offset p1.stickIsSelected, 4
+	.if (eax != 4)
 		mov eax, FALSE
 		ret
 	.endif
@@ -313,63 +322,70 @@ player2_draw endp
 
 player2_recv proc
 	local i:uint32
-	invoke recv, offset p2.stickPos, 4 * sizeof Vec
-	.if (eax != 4 * sizeof Vec)
+
+	invoke recv, offset p2.kickDir, sizeof int32
+	.if (eax != sizeof int32)
 		mov eax, FALSE
 		ret
 	.endif
 
-	invoke recv, offset p2.figPos, 11 * sizeof Vec
-	.if (eax != 11 * sizeof Vec)
+	mov i, 0
+	.while (i<4)
+		mov eax, i
+		lea eax, p2.stickPos[eax * sizeof Vec]
+		add eax, sizeof uint32
+		invoke recv, eax, sizeof uint32
+		.if (eax != sizeof uint32)
+			mov eax, FALSE
+			ret
+		.endif
+
+		inc i
+	.endw
+
+	invoke recv, offset p2.stickIsSelected, 4
+	.if (eax != 4)
 		mov eax, FALSE
 		ret
 	.endif
 
-	invoke recv, offset p2.legPos, 11 * sizeof Vec
-	.if (eax != 11 * sizeof Vec)
-		mov eax, FALSE
-		ret
-	.endif
+	; reflect received values
+	neg p2.kickDir
 
-	; reflect sticks, figs and legs
 	mov i, 0
 	.while (i<4)
 		mov eax, i
 		lea eax, p2.stickPos[eax * sizeof Vec]
 		assume eax:ptr Vec
 
-		sub [eax].x, WND_WIDTH
 		sub [eax].y, WND_HEIGHT
-		neg [eax].x
 		neg [eax].y
 
 		inc i
 	.endw
 
+	; calc figs and legs
 	mov i, 0
-	.while (i<11)
+	.while (i < 11)
+		; figPos[i].y = stickPos[figStickNum[i]].y + figOffsetY[i]
 		mov eax, i
-		lea eax, p2.figPos[eax * sizeof Vec]
-		assume eax:ptr Vec
+		mov eax, figStickNum[eax * sizeof uint32]
+		mov eax, p2.stickPos[eax * sizeof Vec].y
+		add eax, figOffsetY[ebx * sizeof uint32] 
+		mov p2.figPos[ebx * sizeof Vec].y, eax
 
-		sub [eax].x, WND_WIDTH
-		sub [eax].y, WND_HEIGHT
-		neg [eax].x
-		neg [eax].y
+		; legPos[i] = figPos[i] + (LEG2_OFFSET_X, LEG2_OFFSET_Y)
+		invoke vec_cpy, addr p2.legPos[ebx * sizeof Vec], addr p2.figPos[ebx * sizeof Vec]
+		mov ebx, i
+		add p2.legPos[ebx * sizeof Vec].x, LEG2_OFFSET_X
+		add p2.legPos[ebx * sizeof Vec].y, LEG2_OFFSET_Y
 
-		inc i
-	.endw
-
-	mov i, 0
-	.while (i<11)
-		mov eax, i
-		lea eax, p2.figPos[eax * sizeof Vec]
-		assume eax:ptr Vec
-
-		sub [eax].x, WND_WIDTH
-		sub [eax].y, WND_HEIGHT
-		neg [eax].x
-		neg [eax].y
+		; legPos[i].x += kickDir
+		mov eax, figStickNum[ebx * sizeof uint32]
+		.if (p2.stickIsSelected[eax])
+			mov eax, p2.kickDir
+			add p2.legPos[ebx * sizeof Vec].x, eax
+		.endif
 
 		inc i
 	.endw

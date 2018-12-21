@@ -1062,6 +1062,8 @@ gameoverScreen_onUpdate endp
 writeFinalResult proc
 	local playerWon:pntr
 
+	invoke setBkMode, TRANSPARENT
+
 	.CONST
 	finalResultFormat db "%s",0
 	finalScoreFormat db "Score: %i - %i",0
