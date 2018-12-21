@@ -279,7 +279,7 @@ player2_resetFigs proc
 		add eax, WND_HEIGHT/2
 		mov p2.figPos[ebx * sizeof Vec].y, eax
 
-		; legPos[i] = figPos[i] + (LEG1_OFFSET_X, LEG1_OFFSET_Y)
+		; legPos[i] = figPos[i] + (LEG2_OFFSET_X, LEG2_OFFSET_Y)
 		invoke vec_cpy, addr p2.legPos[ebx * sizeof Vec], addr p2.figPos[ebx * sizeof Vec]
 		mov ebx, i
 		add p2.legPos[ebx * sizeof Vec].x, LEG2_OFFSET_X
@@ -342,6 +342,7 @@ player2_recv proc
 
 		inc i
 	.endw
+	printfln "s{%i,%i,%i,%i}",p2.stickPos[0].y, p2.stickPos[1*sizeof Vec].y, p2.stickPos[2*sizeof Vec].y, p2.stickPos[3*sizeof Vec].y
 
 	invoke recv, offset p2.stickIsSelected, 4
 	.if (eax != 4)
@@ -368,8 +369,8 @@ player2_recv proc
 	mov i, 0
 	.while (i < 11)
 		; figPos[i].y = stickPos[figStickNum[i]].y + figOffsetY[i]
-		mov eax, i
-		mov eax, figStickNum[eax * sizeof uint32]
+		mov ebx, i
+		mov eax, figStickNum[ebx * sizeof uint32]
 		mov eax, p2.stickPos[eax * sizeof Vec].y
 		add eax, figOffsetY[ebx * sizeof uint32] 
 		mov p2.figPos[ebx * sizeof Vec].y, eax

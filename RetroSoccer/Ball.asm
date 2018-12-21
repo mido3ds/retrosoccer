@@ -35,7 +35,7 @@ ball_update proc
 			call player2_resetFigs
 
 			inc p2.score
-			invoke vec_set, addr ball.pos, BALL_START_SEC
+			invoke vec_set, addr ball.pos, BALL_START_POS
 			invoke vec_set, addr ball.spd, 0, 0
 			ret
 		.elseif (ballBB.x1 >= 788) ; right
@@ -44,7 +44,7 @@ ball_update proc
 			call player2_resetFigs
 
 			inc p1.score
-			invoke vec_set, addr ball.pos, BALL_START_FIRST
+			invoke vec_set, addr ball.pos, BALL_START_POS
 			invoke vec_set, addr ball.spd, 0, 0
 			ret
 		.endif
@@ -100,12 +100,6 @@ ball_send proc
 		ret
 	.endif
 
-	invoke send, offset ball.spd, sizeof Vec
-	.if (eax != sizeof Vec)
-		mov eax, FALSE
-		ret
-	.endif
-
 	mov eax,TRUE
     ret
 ball_send endp
@@ -117,20 +111,13 @@ ball_recv proc
 		ret
 	.endif
 
-	invoke recv, offset ball.spd, sizeof Vec
-	.if (eax != sizeof Vec)
-		mov eax, FALSE
-		ret
-	.endif
-
 	; reflect ball
 	sub ball.pos.x, WND_WIDTH
 	neg ball.pos.x
+	sub ball.pos.x, SPR_BALL_LEN
 	sub ball.pos.y, WND_HEIGHT
 	neg ball.pos.y
-
-	neg ball.spd.x
-	neg ball.spd.y
+	sub ball.pos.y, SPR_BALL_LEN/2
 
 	mov eax,TRUE
     ret

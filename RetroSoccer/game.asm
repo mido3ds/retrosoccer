@@ -666,7 +666,7 @@ initNonHostGameData proc
 	.endif
 
 	; init ball
-	invoke vec_set, addr ball.pos, BALL_START_SEC
+	invoke vec_set, addr ball.pos, BALL_START_POS
 	invoke vec_set, addr ball.spd, 0, 0
 	.if (selectedLevel == 1)
 		mov ball.speedScalar, LV1_BALL_SPD
@@ -843,7 +843,7 @@ initHostGameData proc
 	.endif
 
 	; init ball
-	invoke vec_set, addr ball.pos, BALL_START_FIRST 
+	invoke vec_set, addr ball.pos, BALL_START_POS 
 	invoke vec_set, addr ball.spd, 0, 0
 	.if (selectedLevel == 1)
 		mov ball.speedScalar, LV1_BALL_SPD
@@ -934,12 +934,15 @@ gameScreen_onUpdate proc t:uint32
 					ret
 				.endif
 			.endif
+		.elseif (eax == SIG_GAME_FINISH)
+			printfln "game finished going to game over screen",0
+			invoke changeScreen, GAME_OVER_SCREEN
 		.elseif (eax == SIG_EXIT)
 			printfln "other user exited, going to connecting screen",0
 			invoke changeScreen, CONNECTING_SCREEN
 			ret
 		.else
-			printfln "gameScreen_onUpdate failed, going to connec error screen",0
+			printfln "gameScreen_onUpdate failed, going to connec error screen,SIG=%i",eax
 			invoke changeScreen, CONNEC_ERROR_SCREEN
 			ret
 		.endif
@@ -970,7 +973,8 @@ gameScreen_onUpdate proc t:uint32
 	add elapsedTime, eax
 	mov eax, elapsedTime
 	.if (eax >= matchTotalTime)
-		invoke changeScreen, GAME_OVER_SCREEN
+		invoke cleanPort
+		invoke sendSig, SIG_GAME_FINISH
 		mov elapsedTime, 0
 	.endif
 
