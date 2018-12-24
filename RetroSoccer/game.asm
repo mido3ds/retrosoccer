@@ -8,7 +8,7 @@ public bluePen, redPen, sprites
 .data
 elapsedTime uint32 0
 previousScreen uint32 0
-currentScreen uint32 CHAT_SCREEN
+currentScreen uint32 LOGO_SCREEN
 userName db MAX_NAME_CHARS+1 dup(0)
 opponentName db MAX_NAME_CHARS+1 dup(0)
 isHost bool ?
@@ -19,9 +19,17 @@ selectedLevel uint32 1
 selectedBallType uint32 BALL_TYPE_1
 selectedColor uint32 PLAYER_COLOR_BLUE
 
+.data?
+chatMsgList pntr ?
+chatBuffer db CHAT_BUFFER_SIZE dup(?)
+chatBufferIndex uint32 ?
+
 INVTYPE_CHAT equ 0
 INVTYPE_GAME equ 1
 invitationType uint32 ?
+
+TEXT_H_MARGIN equ 7
+TEXT_V_MARGIN equ 15
 
 .code
 game_asm:
@@ -865,16 +873,29 @@ initHostGameData endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Game Screen     						   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+SIDE_CHAT_WIDTH equ 240
+SIDE_CHAT_HEIGHT equ 500
+_GS_TEXTBOX_DIM equ <7, 465, 232, 494>
+_GS_SCREEN_X0 equ 8
+_GS_SCREEN_X1 equ 232 
+_GS_SCREEN_Y1 equ 452-20
+
 .const
 fieldFileName db "assets/field.bmp",0
 spritesFileName db "assets/spritesheet.bmp",0
+sideChatFileName db "assets/sideChat.bmp",0
+tabToToggleChat db "[TAB] Toggle Side Chat on/off",0
 
 .data
+_gs_y1 uint32 460-10
+
 .data?
 field Bitmap ?
 sprites Bitmap ?
 bluePen Pen ?
 redPen Pen ?
+_gs_sideChatBmp Bitmap ?
+_gs_shouldDrawSideChat bool FALSE
 
 .code
 gameScreen_onCreate proc
@@ -882,6 +903,8 @@ gameScreen_onCreate proc
 	mov field, eax
 	invoke loadBitmap, offset spritesFileName
 	mov sprites, eax
+	invoke loadBitmap, offset sideChatFileName
+	mov _gs_sideChatBmp, eax
 	invoke createPen, 3, 0ff0000h ;blue
 	mov bluePen, eax
 	invoke createPen, 3, 0000ffh ;red
@@ -892,6 +915,7 @@ gameScreen_onCreate endp
 gameScreen_onDestroy proc
 	invoke deleteBitmap, field
 	invoke deleteBitmap, sprites
+	invoke deleteBitmap, _gs_sideChatBmp
 	invoke deletePen, bluePen
 	invoke deletePen, redPen
 
@@ -905,13 +929,26 @@ gameScreen_onDraw proc
 	call player2_draw
 	call writeScore
 
+	; draw side chat
+	.if (_gs_shouldDrawSideChat)
+		invoke renderBitmap, _gs_sideChatBmp, 0, 0, 0, 0, SIDE_CHAT_WIDTH, SIDE_CHAT_HEIGHT ; screen
+
+		call drawSideChatMessages
+
+		invoke renderBitmap, _gs_sideChatBmp, 0, 0, 0, 0, SIDE_CHAT_WIDTH, 37 ; upper bar
+		invoke renderBitmap, _gs_sideChatBmp, 0, 460, 0, 460, SIDE_CHAT_WIDTH, 40 ; lower bar
+		invoke drawText, offset chatBuffer, _GS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT ; to be send msg
+	.endif
+
 	ret
 gameScreen_onDraw endp
 
 gameScreen_onUpdate proc t:uint32
 	call recvSig
 	.if (eax)
-		.if (eax == SIG_GAME_DATA)
+		.if (eax == SIG_CHAT_DATA)
+			call receiveChatData
+		.elseif (eax == SIG_GAME_DATA)
 			call player2_recv
 			.if (!eax)
 				printfln "couldn't recv player2, going to conn error screen",0
@@ -946,26 +983,49 @@ gameScreen_onUpdate proc t:uint32
 			ret
 		.endif
 	.endif
-	
-	; update and send
-	call player1_update
-	invoke sendSig, SIG_GAME_DATA
-	call player1_send
-	.if (!eax)
-		printfln "couldn't send player1, going to conn error screen",0
-		invoke changeScreen, CONNEC_ERROR_SCREEN
-		ret
-	.endif
+		
+	invoke isKeyPressed, VK_TAB
+	xor _gs_shouldDrawSideChat, al
 
-	.if (isHost)
-		call ball_send
+	.if (!_gs_shouldDrawSideChat)
+		; update and send
+		call player1_update
+		invoke sendSig, SIG_GAME_DATA
+		call player1_send
 		.if (!eax)
-			printfln "couldn't send ball, going to conn error screen",0
+			printfln "couldn't send player1, going to conn error screen",0
 			invoke changeScreen, CONNEC_ERROR_SCREEN
 			ret
 		.endif
 
-		call ball_update
+		.if (isHost)
+			call ball_send
+			.if (!eax)
+				printfln "couldn't send ball, going to conn error screen",0
+				invoke changeScreen, CONNEC_ERROR_SCREEN
+				ret
+			.endif
+
+			call ball_update
+		.endif
+	.else
+		call editMsg
+		; send msg
+		.if (chatBufferIndex > 0)
+			invoke isKeyPressed, VK_RETURN
+			.if (eax)
+				call sendChatData
+			.endif 
+		.endif
+
+		; update scrolling 
+		call getScroll
+		mov ebx, 15
+		imul ebx
+		add _gs_y1, eax
+		.if (_gs_y1 < _GS_SCREEN_Y1)
+			mov _gs_y1, _GS_SCREEN_Y1
+		.endif
 	.endif
 
 	mov eax, t
@@ -1039,6 +1099,38 @@ ballEnteredRightGoal proc
 	.endif
 	ret
 ballEnteredRightGoal endp
+
+drawSideChatMessages proc
+	local fitBB:AABB, node:ptr Node, chatmsg:ptr ChatMsg
+
+	mov eax, chatMsgList
+	mov node, eax
+
+	mov eax, _gs_y1
+	mov fitBB.y0, eax
+	sub fitBB.y0, 20
+	mov fitBB.y1, eax
+
+	.while (node)
+		; chatmsg = node->value
+		mov eax, node
+		assume eax:ptr Node
+		mov ebx, [eax].value
+		mov chatmsg, ebx
+
+		mov fitBB.x0, _GS_SCREEN_X0
+		mov fitBB.x1, _GS_SCREEN_X1
+
+		invoke chatmsg_draw2, chatmsg, addr fitBB, TEXT_V_MARGIN
+
+		; node = node->next
+		mov eax, node
+		assume eax:ptr Node
+		mov ebx, [eax].next
+		mov node, ebx
+	.endw
+	ret
+drawSideChatMessages endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;							Gameover Screen     					   ;;
@@ -1133,10 +1225,8 @@ _CHS_UPPER_BAR_DIM equ <0,0,0,0,WND_WIDTH,59>
 _CHS_LOWER_BAR_DIM equ <0,453,0,453,WND_WIDTH,WND_HEIGHT-453>
 _CHS_TEXTBOX_HEIGHT equ 33
 _CHS_TEXTBOX_DIM equ <30, 458, 720, 458+_CHS_TEXTBOX_HEIGHT>
-_CHS_TEXT_H_MARGIN equ 7
-_CHS_TEXT_V_MARGIN equ 15
-_CHS_SCREEN_X0 equ _CHS_TEXT_H_MARGIN
-_CHS_SCREEN_X1 equ WND_WIDTH-_CHS_TEXT_H_MARGIN
+_CHS_SCREEN_X0 equ TEXT_H_MARGIN
+_CHS_SCREEN_X1 equ WND_WIDTH-TEXT_H_MARGIN
 _CHS_SCREEN_Y1 equ 452-20
 
 .const
@@ -1149,9 +1239,6 @@ _chs_y1 uint32 _CHS_SCREEN_Y1
 
 .data?
 _chs_screenBmp Bitmap ?
-_chs_buffer db CHAT_BUFFER_SIZE dup(?)
-_chs_i uint32 ?
-_chs_list pntr ? ; first node is dummy
 
 .code
 chatScreen_onCreate proc
@@ -1162,8 +1249,8 @@ chatScreen_onCreate endp
 
 chatScreen_onDestroy proc
 	invoke deleteBitmap, _chs_screenBmp
-	.if (_chs_list)
-		invoke list_delete, _chs_list, offset chatmsg_delete
+	.if (chatMsgList)
+		invoke list_delete, chatMsgList, offset chatmsg_delete
 	.endif
 	ret
 chatScreen_onDestroy endp
@@ -1176,7 +1263,7 @@ chatScreen_onDraw proc
 
 	invoke renderBitmap, _chs_screenBmp, _CHS_UPPER_BAR_DIM ; upper bar
 	invoke renderBitmap, _chs_screenBmp, _CHS_LOWER_BAR_DIM ; lower bar
-	invoke drawText, offset _chs_buffer, _CHS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT ; to be send msg
+	invoke drawText, offset chatBuffer, _CHS_TEXTBOX_DIM, DT_WORDBREAK or DT_LEFT ; to be send msg
 	ret
 chatScreen_onDraw endp
 
@@ -1208,7 +1295,7 @@ chatScreen_onUpdate proc t:uint32
 	.endif
 
 	; send msg
-	.if (_chs_i > 0)
+	.if (chatBufferIndex > 0)
 		invoke btn_isClicked, _chs_sendBtn
 		push eax
 		invoke isKeyPressed, VK_RETURN
@@ -1234,19 +1321,19 @@ chatScreen_onUpdate endp
 editMsg proc
 	invoke getCharInput 
 	.if (eax == VK_BACK)
-		.if (_chs_i != 0)
-			dec _chs_i
-			mov ebx, _chs_i
-			mov _chs_buffer[ebx], 0
+		.if (chatBufferIndex != 0)
+			dec chatBufferIndex
+			mov ebx, chatBufferIndex
+			mov chatBuffer[ebx], 0
 			ret
 		.endif
 	.elseif (eax == VK_ESCAPE || eax == VK_TAB || eax == VK_RETURN) ;ignore those buttons
 		ret
 	.elseif (eax != NULL)
-		.if (_chs_i < CHAT_BUFFER_SIZE)
-			mov ebx, _chs_i
-			mov _chs_buffer[ebx], al
-			inc _chs_i
+		.if (chatBufferIndex < CHAT_BUFFER_SIZE)
+			mov ebx, chatBufferIndex
+			mov chatBuffer[ebx], al
+			inc chatBufferIndex
 		.endif
 	.endif
 	ret
@@ -1265,12 +1352,12 @@ receiveChatData proc
 	mov chatmsg, eax
 
 	; add it to list
-	.if (!_chs_list)
+	.if (!chatMsgList)
 		invoke list_init, chatmsg
 	.else
-		invoke list_insert, _chs_list, chatmsg
+		invoke list_insert, chatMsgList, chatmsg
 	.endif
-	mov _chs_list, eax
+	mov chatMsgList, eax
 
 	ret
 receiveChatData endp
@@ -1279,15 +1366,15 @@ sendChatData proc
 	local chatmsg:ptr ChatMsg
 
 	; create chatmsg
-	invoke chatmsg_new, ME_IS_SENDER, offset _chs_buffer, _chs_i
+	invoke chatmsg_new, ME_IS_SENDER, offset chatBuffer, chatBufferIndex
 	mov chatmsg, eax
 
-	.if (!_chs_list)
+	.if (!chatMsgList)
 		invoke list_init, chatmsg
 	.else
-		invoke list_insert, _chs_list, chatmsg
+		invoke list_insert, chatMsgList, chatmsg
 	.endif
-	mov _chs_list, eax
+	mov chatMsgList, eax
 	
 	; send it
 	invoke sendSig, SIG_CHAT_DATA
@@ -1298,15 +1385,15 @@ sendChatData proc
 		ret
 	.endif
 
-	invoke memzero, offset _chs_buffer, CHAT_BUFFER_SIZE
-	mov _chs_i, 0
+	invoke memzero, offset chatBuffer, CHAT_BUFFER_SIZE
+	mov chatBufferIndex, 0
 	ret
 sendChatData endp
 
 drawChatMessages proc
 	local fitBB:AABB, node:ptr Node, chatmsg:ptr ChatMsg
 
-	mov eax, _chs_list
+	mov eax, chatMsgList
 	mov node, eax
 
 	mov eax, _chs_y1
@@ -1324,7 +1411,7 @@ drawChatMessages proc
 		mov fitBB.x0, _CHS_SCREEN_X0
 		mov fitBB.x1, _CHS_SCREEN_X1
 
-		invoke chatmsg_draw, chatmsg, addr fitBB, _CHS_TEXT_V_MARGIN
+		invoke chatmsg_draw, chatmsg, addr fitBB, TEXT_V_MARGIN
 
 		; node = node->next
 		mov eax, node

@@ -31,6 +31,9 @@ CONOUT char "CONOUT$",0
 MAIN_CLASS_NAME char "MainWindowClass",0
 APP_NAME db "RetroSoccer",0  
 
+.data
+__portNum uint32 1
+
 .data?    
 mousePos Vec <>       
 __programInst HINSTANCE ?        
@@ -43,7 +46,6 @@ __hdcTemp HDC ?
 __lastTickCount uint32 ?
 __randSeed uint32 ?
 __charInput uint32 ?
-__portNum uint32 ?
 __portHndl HANDLE ?
 __worldX int32 ?
 __worldY int32 ?
@@ -65,8 +67,9 @@ start proc
 	mov __stdout, eax
 	mov mousePos.x, 0
 	mov mousePos.y, 0
-
-	call openConnection
+	
+	; remove comment to run in same machine
+	;call openConnection
 
 	mov   wc.cbSize, SIZEOF WNDCLASSEX                   
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
@@ -252,9 +255,7 @@ exit proc
 exit endp
 
 setWindowSize proc w:uint32, h:uint32
-	local rect:RECT
-	invoke GetWindowRect, __mainWnd, addr rect
-	invoke MoveWindow, __mainWnd, rect.left, rect.top, w, h, FALSE
+	invoke SetWindowPos, __mainWnd, HWND_TOP, 0, 0, w, h, SWP_NOMOVE or SWP_NOOWNERZORDER
 	ret
 setWindowSize endp
 
@@ -462,7 +463,7 @@ openConnection proc
 	; port configuration
 	mov portDcb.DCBlength, sizeof DCB
 	invoke GetCommState, __portHndl, addr portDcb
-	mov portDcb.BaudRate, CBR_256000		   	  ; baud rate
+	mov portDcb.BaudRate, 9600		   	  ; baud rate
 	mov portDcb.ByteSize, 8				   		  ; byte size 
 	mov portDcb.Parity, ODDPARITY		   		  ; parity bit
 	mov portDcb.StopBits, TWOSTOPBITS      		  ; stop bits    
@@ -1284,6 +1285,61 @@ chatmsg_draw proc cm:ptr ChatMsg, bb:ptr AABB, yMargin:uint32
 	sub [eax].y1, ebx ; bb->y1 -= yMargin + height
 	ret
 chatmsg_draw endp
+
+chatmsg_draw2 proc cm:ptr ChatMsg, bb:ptr AABB, yMargin:uint32
+	local height:uint32, msg:pntr, len:uint32, sender:byte
+
+	mov eax, cm
+	assume eax:ptr ChatMsg
+	mov ecx, [eax].len
+	mov len, ecx
+	mov ecx, [eax].msg
+	mov msg, ecx
+
+	mov bl, [eax].sender
+	mov sender, bl
+
+	; calc height
+	invoke DrawText, __hdcTemp, msg, len, bb, DT_LEFT or DT_CALCRECT or DT_WORDBREAK
+	mov height, eax
+
+	.if (bl == OTHER_IS_SENDER)
+		mov eax, bb
+		assume eax:ptr AABB
+		sub [eax].x0, 240
+		neg [eax].x0
+		sub [eax].x1, 240
+		neg [eax].x1
+
+		push [eax].x0
+		push [eax].x1
+		pop [eax].x0
+		pop [eax].x1
+	.endif
+
+	; bb->y0 = bb->y1 - height
+	mov eax, bb
+	assume eax:ptr AABB
+	mov ebx, [eax].y1
+	mov [eax].y0, ebx
+	mov ebx, height
+	sub [eax].y0, ebx
+
+	push bb
+	call _drawBoxAroundText
+
+	; draw
+	invoke DrawText, __hdcTemp, msg, len, bb,  DT_WORDBREAK
+
+	; calc bb for next chatmsg
+	mov eax, bb
+	assume eax:ptr AABB
+	mov ebx, yMargin
+	add ebx, height
+	sub [eax].y0, ebx ; bb->y0 -= yMargin + height
+	sub [eax].y1, ebx ; bb->y1 -= yMargin + height
+	ret
+chatmsg_draw2 endp
 
 _DB_MARGIN equ 2
 _drawBoxAroundText proc b:ptr AABB

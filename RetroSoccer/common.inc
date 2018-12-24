@@ -191,6 +191,7 @@ chatmsg_getMsg proto cm:ptr ChatMsg
 
 ; eax = maxY
 chatmsg_draw proto cm:ptr ChatMsg, bb:ptr AABB, yMargin:uint32
+chatmsg_draw2 proto cm:ptr ChatMsg, bb:ptr AABB, yMargin:uint32
 
 ; eax = TRUE|FALSE
 chatmsg_send proto cm:ptr ChatMsg

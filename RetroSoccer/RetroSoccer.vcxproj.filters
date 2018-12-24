@@ -25,13 +25,13 @@
     <MASM Include="common.asm">
       <Filter>Assembly Files</Filter>
     </MASM>
-    <MASM Include="game.asm">
-      <Filter>Assembly Files</Filter>
-    </MASM>
     <MASM Include="Player.asm">
       <Filter>Assembly Files</Filter>
     </MASM>
     <MASM Include="Ball.asm">
+      <Filter>Assembly Files</Filter>
+    </MASM>
+    <MASM Include="game.asm">
       <Filter>Assembly Files</Filter>
     </MASM>
   </ItemGroup>
