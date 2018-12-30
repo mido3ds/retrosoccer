@@ -19,6 +19,7 @@ ifndef SUCCESS
 SUCCESS equ		0
 endif
 
+CREATE_ANOTHER_WINDOW equ TRUE ; TRUE=open two windows, FALSE=one window
 FIRST_PLAYER_PORT equ 1
 SECOND_PLAYER_PORT equ 2
 

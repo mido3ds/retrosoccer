@@ -32,7 +32,7 @@ MAIN_CLASS_NAME char "MainWindowClass",0
 APP_NAME db "RetroSoccer",0  
 
 .data
-__portNum uint32 1
+__portNum uint32 FIRST_PLAYER_PORT
 
 .data?    
 mousePos Vec <>       
@@ -55,7 +55,9 @@ __scroll int32 ?
 start proc
 	local wc:WNDCLASSEX, msg:MSG, num:int32
 
-	call createAnotherProcess
+	.if CREATE_ANOTHER_WINDOW
+		call createAnotherProcess
+	.endif
 
 	invoke GetModuleHandle, NULL            
 	mov __programInst, eax 
@@ -68,8 +70,7 @@ start proc
 	mov mousePos.x, 0
 	mov mousePos.y, 0
 	
-	; remove comment to run in same machine
-	;call openConnection
+	call openConnection
 
 	mov   wc.cbSize, SIZEOF WNDCLASSEX                   
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
