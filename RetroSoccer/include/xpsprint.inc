@@ -1,7 +1,0 @@
-; ..\X86\xpsprint.lib PROTOTYPES
-; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-DllMain PROTO :DWORD,:DWORD,:DWORD
-StartXpsPrintJob PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
-StartXpsPrintJob1 PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD,:DWORD
-

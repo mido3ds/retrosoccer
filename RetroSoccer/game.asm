@@ -70,7 +70,6 @@ onDestroy proc
 	call exitScreen_onDestroy
 
 	invoke sendSig, SIG_EXIT
-	call closeConnection
 
 	ret
 onDestroy endp
